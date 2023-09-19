@@ -1,0 +1,114 @@
+#ifndef __UART_H__
+#define __UART_H__
+
+#include "aips.h"
+#include "utils.h"
+
+#define UART_1_OFFSET (&((aips_2_s *)AIPS_2_OFFSET)->lpuart1)
+#define UART_2_OFFSET (&((aips_2_s *)AIPS_2_OFFSET)->lpuart2) 
+#define UART_3_OFFSET (&((aips_2_s *)AIPS_2_OFFSET)->lpuart3) 
+#define UART_4_OFFSET (&((aips_2_s *)AIPS_2_OFFSET)->lpuart4) 
+#define UART_5_OFFSET (&((aips_2_s *)AIPS_2_OFFSET)->lpuart5) 
+#define UART_6_OFFSET (&((aips_2_s *)AIPS_2_OFFSET)->lpuart6) 
+#define UART_7_OFFSET (&((aips_2_s *)AIPS_2_OFFSET)->lpuart7) 
+#define UART_8_OFFSET (&((aips_2_s *)AIPS_2_OFFSET)->lpuart8)
+
+enum UART_BAUD_BITS {
+    UART_BAUD_BITS_SBR = 0,
+    UART_BAUD_BITS_SBNS = 13,
+    UART_BAUD_BITS_RXEDGIE,
+    UART_BAUD_BITS_LBKDIE,
+    UART_BAUD_BITS_RESYNCDIS,
+    UART_BAUD_BITS_BOTHEDGE,
+    UART_BAUD_BITS_MATCFG,
+    UART_BAUD_BITS_RDMAE = 21,
+    UART_BAUD_BITS_TDMAE = 23,
+    UART_BAUD_BITS_OSR,
+    UART_BAUD_BITS_M10 = 29,
+    UART_BAUD_BITS_MAEN2,
+    UART_BAUD_BITS_MAEN1
+};
+
+enum UART_CTRL_BITS {
+    UART_CTRL_BITS_PT = 0,
+    UART_CTRL_BITS_PE,
+    UART_CTRL_BITS_ILT,
+    UART_CTRL_BITS_WAKE,
+    UART_CTRL_BITS_M,
+    UART_CTRL_BITS_RSRC,
+    UART_CTRL_BITS_DOZEEN,
+    UART_CTRL_BITS_LOOPS,
+    UART_CTRL_BITS_IDLECFG,
+    UART_CTRL_BITS_M7 = 11,
+    UART_CTRL_BITS_MA2IE = 14,
+    UART_CTRL_BITS_MA1IE,
+    UART_CTRL_BITS_SBK,
+    UART_CTRL_BITS_RWU,
+    UART_CTRL_BITS_RE,
+    UART_CTRL_BITS_TE,
+    UART_CTRL_BITS_ILIE,
+    UART_CTRL_BITS_RIE,
+    UART_CTRL_BITS_TCIE,
+    UART_CTRL_BITS_TIE,
+    UART_CTRL_BITS_PEIE,
+    UART_CTRL_BITS_FEIE,
+    UART_CTRL_BITS_NEIE,
+    UART_CTRL_BITS_ORIE,
+    UART_CTRL_BITS_TXINV,
+    UART_CTRL_BITS_TXDIR,
+    UART_CTRL_BITS_R9T8,
+    UART_CTRL_BITS_R8T9
+};
+
+enum UART_DATA_BITS {
+    UART_DATA_BITS_DATA = 0,
+    UART_DATA_BITS_IDLINE = 11,
+    UART_DATA_BITS_RXEMPT,
+    UART_DATA_BITS_FRETSC,
+    UART_DATA_BITS_PARITYPE,
+    UART_DATA_BITS_NOISY
+};
+
+enum UART_FIFO_BITS {
+    UART_FIFO_BITS_RXFIFOSIZE = 0,
+    UART_FIFO_BITS_RXFE = 3,
+    UART_FIFO_BITS_TXFIFOSIZE,
+    UART_FIFO_BITS_TXFE = 7,
+    UART_FIFO_BITS_RXUFE,
+    UART_FIFO_BITS_TXOFE,
+    UART_FIFO_BITS_RXIDEN,
+    UART_FIFO_BITS_RXFLUSH = 14,
+    UART_FIFO_BITS_TXFLUSH,
+    UART_FIFO_BITS_RXUF,
+    UART_FIFO_BITS_TXOF,
+    UART_FIFO_BITS_RXEMPT = 22,
+    UART_FIFO_BITS_TXEMPT
+};
+
+#define UART_GLOBAL_BITS_RST 1
+
+#define UART_BUS_1_GPIO_BUS 1
+#define UART_BUS_2_GPIO_BUS 1
+#define UART_BUS_3_GPIO_BUS 1
+#define UART_BUS_4_GPIO_BUS 2
+#define UART_BUS_5_GPIO_BUS 2
+#define UART_BUS_6_GPIO_BUS 1
+#define UART_BUS_7_GPIO_BUS 1
+
+
+// BAUD = CLK / ((OSR+1) * SBR)
+// pref OSR+1 close to 16 for ~1-2% tol
+// CLK is by default 24MHz
+enum UART_BAUD_PRECALC {
+    UART_BAUD_115200 = (BITNVAL(UART_BAUD_BITS_OSR, 15) | BITNVAL(UART_BAUD_BITS_SBR, 13)), // OSR+1 * SBR = 208 vs 208.33
+    UART_BAUD_38400 = (BITNVAL(UART_BAUD_BITS_OSR, 15) | BITNVAL(UART_BAUD_BITS_SBR, 39)), // OSR+1 * SBR = 624 vs 625
+};
+
+extern volatile int g_uart_bus;
+
+void uart_init(int bus, int baud, bool wait);
+void uart_write(int bus, unsigned int data);
+void uart_print(int bus, char* str);
+void uart_printn(int bus, char* str, int n);
+
+#endif
