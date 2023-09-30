@@ -7,6 +7,7 @@
 #include "include/debug.h"
 
 static const char debug_hexbase[] = "0123456789ABCDEF";
+volatile int g_debug_uartn = 1; // should have !0 checks everywhere but meh
 
 // equ printf(0x08X)
 void debug_printU32(uint32_t value, bool add_nl) {

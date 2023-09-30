@@ -32,7 +32,7 @@ uint8_t teensy_pad_to_gpio_bus[40] = {
     TEENSY_PAD_36_BUS, TEENSY_PAD_37_BUS, TEENSY_PAD_38_BUS, TEENSY_PAD_39_BUS
 };
 
-uint8_t teensy_uart_to_imxbus_rx_tx[8][3] = {
+uint8_t teensy_uartn_to_imxbus_rx_tx[8][3] = {
     {0, 0, 0}, // no uart0
     {TEENSY_UART1_IMX_BUS, TEENSY_PAD_UART1_RX, TEENSY_PAD_UART1_TX},
     {TEENSY_UART2_IMX_BUS, TEENSY_PAD_UART2_RX, TEENSY_PAD_UART2_TX},
@@ -50,21 +50,37 @@ void teensy_pad_logic_ctrl_tightness(int pad, bool tight, bool wait) {
     }
 }
 
-int teensy_uart_init(int teensy_uartn, int baud, bool init_tx, bool init_rx, bool wait) {
+int teensy_uart_init(int teensy_uartn, int baud, int init_bitflags, bool wait) {
     if (teensy_uartn == 0 || teensy_uartn > 7)
         return -1;
 
-    if (init_tx) {
+    int imx_bus = teensy_uart_get_imx_bus(teensy_uartn);
+
+    if (init_bitflags & BITN(UART_INIT_BITS_TX_EN)) {
         if (teensy_set_pad_ctl(teensy_uart_get_tx_pad(teensy_uartn), -1, TEENSY_PAD_MODE_UART, wait) < 0)
             return -2;
+        if (imx_bus != 1) { // LPUART1 does not have iomuxc input select
+            // hopefully noone will ever see this atrocity
+            volatile uint32_t* lpuart2p_tx_input_select = (imx_bus == 2) ? &iomuxc.input_select.lpuart2_tx : &iomuxc.input_select.lpuart3_cts_b;
+            
+            lpuart2p_tx_input_select[(imx_bus - 2) * 2] = teensy_get_uartn_isv(teensy_uartn);
+            while (wait && (lpuart2p_tx_input_select[(imx_bus - 2) * 2] != teensy_get_uartn_isv(teensy_uartn))) {};
+        }
     }
 
-    if (init_rx) {
-        if (teensy_set_pad_ctl(teensy_uart_get_rx_pad(teensy_uartn), -1, TEENSY_PAD_MODE_UART, wait) < 0)
+    if (init_bitflags & BITN(UART_INIT_BITS_RX_EN)) {
+        if (teensy_set_pad_ctl(teensy_uart_get_rx_pad(teensy_uartn), -1, TEENSY_PAD_MODE_UART, wait) < 0) // maybe add hysteresis?
             return -3;
+        if (imx_bus != 1) { // LPUART1 does not have iomuxc input select
+            // cute ^2
+            volatile uint32_t* lpuart2p_rx_input_select = (imx_bus == 2) ? &iomuxc.input_select.lpuart2_rx : &iomuxc.input_select.lpuart2_tx;
+            
+            lpuart2p_rx_input_select[(imx_bus - 2) * 2] = teensy_get_uartn_isv(teensy_uartn);
+            while (wait && (lpuart2p_rx_input_select[(imx_bus - 2) * 2] != teensy_get_uartn_isv(teensy_uartn))) {};
+        }
     }
 
-    uart_init(teensy_uart_get_imx_bus(teensy_uartn), baud, wait);
+    uart_init(imx_bus, baud, init_bitflags, wait);
 
     return 0;
 }

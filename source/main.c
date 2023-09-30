@@ -15,8 +15,13 @@ void init() {
     ccm_set_uart_clk(true, 0, true); // derive uart clock from 24mhz osc_clk, don't divide
 
 #ifndef SILENT
-    if (teensy_uart_init(DEBUG_UARTN, UART_BAUD_115200, true, false, true) >= 0) { // init default debug uart, output only
-        g_uart_bus = teensy_uart_get_imx_bus(DEBUG_UARTN); // print to default debug uart
+    if (teensy_uart_init(
+        DEBUG_UARTN,
+        UART_BAUD_115200,
+        BITN(UART_INIT_BITS_RX_EN) | BITN(UART_INIT_BITS_RX_FIFO_EN) | BITN(UART_INIT_BITS_TX_EN) | BITN(UART_INIT_BITS_TX_FIFO_EN),
+        true
+    ) >= 0) { // init default debug uart
+        g_debug_uartn = DEBUG_UARTN; // print to default debug uart
         printf("\ninit teensy4vfi [%X], me @ %X\n", get_build_timestamp(), init);
     }
 #endif

@@ -6,7 +6,7 @@ This project is in its very early stages, it also serves as a way for me to lear
 Some code might make no sense and/or be overcomplicated, suggestions and non-C++ PRs are welcome.
 
 ## TODOs
- - Interrupt-less UART RX handling + RPC
+ - RPC
  - Exceptions & GPIO Interrupts
  - Basic PoC for intr-trigger -> wait -> glitch
  - Custom configuration support for the above
