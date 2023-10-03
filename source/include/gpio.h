@@ -27,6 +27,8 @@
 
 #define gpio_get_bus_paddr(bus) gpio_regs[bus]
 
+extern aips_gpio* gpio_regs[10];
+
 int gpio_port_mode(int bus, int port, bool output, bool wait);
 int gpio_port_set(int bus, int port, bool wait);
 int gpio_port_clear(int bus, int port, bool wait);

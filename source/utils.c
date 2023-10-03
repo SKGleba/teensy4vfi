@@ -3,10 +3,10 @@
 
 #include "include/utils.h"
 
-void delay(int n) {
-    volatile int i, j;
+void delay(unsigned int n) {
+    volatile unsigned int i, j;
     for (i = 0; i < n; i++)
-        for (j = 0; j < 200; j++)
+        for (j = 0; j < 600; j++)
             ;
 }
 

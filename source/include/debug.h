@@ -24,12 +24,14 @@
 #define hexdump(addr, length, show_addr) debug_printRange(addr, length, (int)show_addr)
 
 // get a "\r\n" terminated string from debug uart
-#define scans(string_buf, max_len) teensy_uart_scanns(g_debug_uartn, string_buf, max_len, 0)
-#define scans_timeout(string_buf, max_len, timeout) teensy_uart_scanns(g_debug_uartn, string_buf, max_len, timeout)
+#define scans(string_buf, max_len) teensy_uart_scanns(g_debug_uartn, (char*)string_buf, max_len, 0)
+#define scans_timeout(string_buf, max_len, timeout) teensy_uart_scanns(g_debug_uartn, (char*)string_buf, max_len, timeout)
 
 // get [count] bytes from debug uart
-#define scanb(bytes_buf, count) teensy_uart_scann(g_debug_uartn, bytes_buf, count, 0)
-#define scanb_timeout(bytes_buf, count, timeout) teensy_uart_scann(g_debug_uartn, bytes_buf, count, timeout)
+#define scanb(bytes_buf, count) teensy_uart_scann(g_debug_uartn, (uint8_t*)bytes_buf, count, 0)
+#define scanb_timeout(bytes_buf, count, timeout) teensy_uart_scann(g_debug_uartn, (uint8_t*)bytes_buf, count, timeout)
+
+#define rxflush() teensy_uart_rxfifo_flush(g_debug_uartn)
 
 #endif
 

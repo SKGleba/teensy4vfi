@@ -15,4 +15,6 @@
 
 #define DEFAULT_CLOCKSPEED CCM_ARM_CLKF_FULL_SPEED
 
+#define RPC_WRITE_DELAY 0x100 // delay before replying to a RPC
+
 #endif

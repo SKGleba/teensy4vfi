@@ -5,12 +5,13 @@ Teensy 4.0 firmware for Voltage Fault Injection research
 This project is in its very early stages, it also serves as a way for me to learn """white box""" SoC baremetal programming.<br>
 Some code might make no sense and/or be overcomplicated, suggestions and non-C++ PRs are welcome.
 
-## TODOs
- - RPC
- - Exceptions & GPIO Interrupts
- - Basic PoC for intr-trigger -> wait -> glitch
- - Custom configuration support for the above
+## Known TODOs
+ - PC RPC script
+ - More RPC commands
  - Docs, readme, measurements, etc
+ - Exceptions & Interrupts (optional)
+ - Interrupt-based trigger (optional due to high jitter)
+ - Interrupt->DMA-based UART RX handling (optional, sounds fun)
 
 ## compiling & flashing
 This project does not have any external requirements, it can be compiled with the [Arm GNU Toolchain](https://developer.arm.com/Tools%20and%20Software/GNU%20Toolchain).<br>

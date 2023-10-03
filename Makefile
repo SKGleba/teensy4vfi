@@ -1,6 +1,6 @@
 SRCDIR 	= source
 SRCS	= $(wildcard source/*.c)
-OBJS	=  $(SRCS:.c=.o) source/boot_hdr.ao source/boot.ao source/vector.ao
+OBJS	=  $(SRCS:.c=.o) source/boot_hdr.ao source/boot.ao source/vector.ao source/glitch.ao
 
 PREFIX	= arm-none-eabi
 CC		= $(PREFIX)-gcc

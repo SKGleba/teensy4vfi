@@ -1,6 +1,8 @@
 #ifndef __TEENSY_PADS_H__
 #define __TEENSY_PADS_H__
 
+#define TEENSY_PADS_COUNT 40
+
 // pain
 #define TEENSY_PAD_0_PORT 3 
 #define TEENSY_PAD_1_PORT 2 

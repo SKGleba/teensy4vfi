@@ -18,7 +18,10 @@
 #define BITNVALM(n, val, mask) (((val) & (mask)) << (n))
 
 // funcs
-void delay(int n);
+void delay(unsigned int n);
+
+// 3 instructions, 64bits total, consistent bp curve on real delay values, ignore the exp w
+#define delay_abs(delay_val_reg) asm("1:\nsubs %0, #1\nbne 1b\n" : : "r"(delay_val_reg))
 
 // get compile timestamp
 __attribute__((noinline)) uint32_t get_build_timestamp(void);

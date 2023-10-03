@@ -64,6 +64,28 @@ unsigned int uart_read(int bus, unsigned int timeout, bool wait) {
     return data;
 }
 
+void uart_print(int bus, char* str) {
+    while (*str) {
+        if (*str == '\n')
+            uart_write(bus, '\r');
+
+        uart_write(bus, *str++);
+    }
+}
+
+void uart_printn(int bus, char* str, int n) {
+    char* z = str;
+
+    while (n && *z) {
+        if (*z == '\n')
+            uart_write(bus, '\r');
+
+        uart_write(bus, *z++);
+
+        n--;
+    }
+}
+
 // TODO: uart_scan with IDLE-based break?
 
 // setting [timeout] to 0 will make it wait indefinitely
@@ -94,26 +116,4 @@ int uart_scanns(int bus, char* out, int outsize, unsigned int timeout) {
         }
     }
     return -1;
-}
-
-void uart_print(int bus, char* str) {
-    while (*str) {
-        if (*str == '\n')
-            uart_write(bus, '\r');
-
-        uart_write(bus, *str++);
-    }
-}
-
-void uart_printn(int bus, char* str, int n) {
-    char* z = str;
-
-    while (n && *z) {
-        if (*z == '\n')
-            uart_write(bus, '\r');
-
-        uart_write(bus, *z++);
-
-        n--;
-    }
 }
