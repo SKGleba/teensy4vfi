@@ -63,6 +63,8 @@ void rpc_loop(void) {
             cret = glitch_configure_default(GLITCH_CONFIG_DEFAULT_TYPE_LOGIC_LEVEL, data[0], data[1], data[2]);
             break;
         case RPC_CMD_GLITCH_ARM:
+            if (data[0])
+                printf(RPC_WATERMARK "ARMED!\n", cret);
             glitch_arm();
             cret = 0;
             break;
@@ -71,6 +73,9 @@ void rpc_loop(void) {
             break;
         case RPC_CMD_GLITCH_PREP_UART:
             cret = glitch_configure_default(GLITCH_CONFIG_DEFAULT_TYPE_UART, data[0], data[1], data[2]);
+            break;
+        case RPC_CMD_SET_CLK:
+            cret = ccm_set_core_clkf(data[1], data[0]);
             break;
         default:
             break;

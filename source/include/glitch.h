@@ -5,7 +5,7 @@
 #include "defs.h"
 #include "teensy.h"
 
-#define GLITCH_DEFAULT_CLKSPEED CCM_ARM_CLKF_600MHZ
+#define GLITCH_DEFAULT_CLKSPEED 600000000 // 600Mhz
 #define GLITCH_DEFAULT_FUNC s_glitch
 #define GLITCH_DEFAULT_OFF 300000000 // ~1s
 #define GLITCH_DEFAULT_OFF_MULT 1

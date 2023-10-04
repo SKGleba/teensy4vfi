@@ -25,6 +25,7 @@ SECTIONS
 
 	.itcm : {
 		*(.text.vectors)
+		*(.text.glitch_funcs)
 		*(.text*)
 		. = ALIGN(4);
 	} > ITCM  AT > FLASH

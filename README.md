@@ -6,12 +6,24 @@ This project is in its very early stages, it also serves as a way for me to lear
 Some code might make no sense and/or be overcomplicated, suggestions and non-C++ PRs are welcome.
 
 ## Known TODOs
- - PC RPC script
- - More RPC commands
+ - Critical bug fixes
  - Docs, readme, measurements, etc
- - Exceptions & Interrupts (optional)
+ - More glitch types
+
+### Optional
+ - Exceptions & Interrupts
  - Interrupt-based trigger (optional due to high jitter)
- - Interrupt->DMA-based UART RX handling (optional, sounds fun)
+ - Interrupt->DMA-based UART RX handling
+ - More RPC commands
+
+### Known BUGs
+ - logic level trigger is too sensitive
+   - triggers if you fart in its general direction
+   - works fine with only wire being trigger mosfet, adding a LA to the line triggers the trigger
+ - uart artifacts during glitch_prep_uart (2+) after ccm_set_core_clkf causing RPC script error
+   - we reset the UART controller here, maybe add some TC delay?
+ - PC RPC script skipping, cutting return codes
+   - timing issues, very low priority 
 
 ## compiling & flashing
 This project does not have any external requirements, it can be compiled with the [Arm GNU Toolchain](https://developer.arm.com/Tools%20and%20Software/GNU%20Toolchain).<br>

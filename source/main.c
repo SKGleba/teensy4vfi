@@ -54,10 +54,7 @@ void main() {
 void test() {
     printf("test test test\n");
     {
-        //rpc_loop();
-        if (glitch_configure_default(GLITCH_CONFIG_DEFAULT_TYPE_UART, GLITCH_DEFAULT_OFF, GLITCH_DEFAULT_OFF_MULT, GLITCH_DEFAULT_WIDTH) >= 0)
-            glitch_arm();
-
+        rpc_loop();
     }
     printf("all tests done\n");
 }

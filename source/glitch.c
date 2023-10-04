@@ -101,7 +101,10 @@ int glitch_configure(glitch_config_s* config) {
     }
 
     // set clocks
-    ccm_set_core_clkf(GLITCH_DEFAULT_CLKSPEED, 0);                                                                  // teensy core clock freq
+    if (config->overrides.clockspeed)                                                                               // teensy core clock freq
+        ccm_set_core_clkf(0, config->overrides.clockspeed);
+    else
+        ccm_set_core_clkf(0, GLITCH_DEFAULT_CLKSPEED);
 
     // set the glitch func
     glitch_arm = s_glitch;                                                                                          // s_glitch (logic level trigger,waitloop)
