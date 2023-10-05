@@ -80,12 +80,12 @@ bool gpio_port_read(int bus, int port, bool wait, bool wait_target) {
         return -1;
 
     if (!(gpio_regs[bus]->gdir & BITN(port))) {
-        bool state = gpio_regs[bus]->dr & BITN(port);
+        bool state = !!(gpio_regs[bus]->dr & BITN(port));
         if (wait) {
             if (wait_target > 1) // dont use this unless you know what you are doing [timings]
                 wait_target = !state;
             while (1) {
-                state = gpio_regs[bus]->dr & BITN(port);
+                state = !!(gpio_regs[bus]->dr & BITN(port));
                 if (state == wait_target)
                     break;
             };

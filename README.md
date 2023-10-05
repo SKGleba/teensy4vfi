@@ -17,9 +17,6 @@ Some code might make no sense and/or be overcomplicated, suggestions and non-C++
  - More RPC commands
 
 ### Known BUGs
- - logic level trigger is too sensitive
-   - triggers if you fart in its general direction
-   - works fine with only wire being trigger mosfet, adding a LA to the line triggers the trigger
  - uart artifacts during glitch_prep_uart (2+) after ccm_set_core_clkf causing RPC script error
    - we reset the UART controller here, maybe add some TC delay?
  - PC RPC script skipping, cutting return codes

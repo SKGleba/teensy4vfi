@@ -18,7 +18,7 @@
 
 // use _direct funcs only with abs args
 #define gpio_get_bus_paddr_direct(bus) (GPIO_ ## bus ## _OFFSET)
-#define gpio_read_direct(bus, port) (((aips_gpio*)(gpio_get_bus_paddr_direct(bus)))->dr & BITN(port))
+#define gpio_read_direct(bus, port) (!!(((aips_gpio*)(gpio_get_bus_paddr_direct(bus)))->dr & BITN(port)))
 #define gpio_set_direct(bus, port) (((aips_gpio*)(gpio_get_bus_paddr_direct(bus)))->dr_set = BITN(port))
 #define gpio_clear_direct(bus, port) (((aips_gpio*)(gpio_get_bus_paddr_direct(bus)))->dr_clear = BITN(port))
 #define gpio_toggle_direct(bus, port) (((aips_gpio*)(gpio_get_bus_paddr_direct(bus)))->dr_toggle = BITN(port))
