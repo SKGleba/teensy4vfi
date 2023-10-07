@@ -159,5 +159,6 @@ int uart_scann(int bus, uint8_t* out, int outsize, unsigned int timeout);
 int uart_scanns(int bus, char* out, int outsize, unsigned int timeout);
 #define uart_rxfifo_flush(bus) (uart_regs[bus]->fifo |= BITN(UART_FIFO_BITS_RXFLUSH))
 #define uart_txfifo_flush(bus) (uart_regs[bus]->fifo |= BITN(UART_FIFO_BITS_TXFLUSH))
+#define uart_wait_tc(bus) while(!(uart_regs[bus]->stat & BITN(UART_STAT_BITS_TC))){};
 
 #endif

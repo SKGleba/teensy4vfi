@@ -1,7 +1,7 @@
 import sys, os, struct, code, binascii
 import serial, time, re, math
 
-DEFAULT_PORT = 'COM14'
+DEFAULT_PORT = 'COM18'
 DEFAULT_BAUD = 115200
 
 GLITCH_DEFAULT_UART_TRIGGER_EXP_BYTE = b'\xD9'
@@ -47,5 +47,11 @@ if __name__ == "__main__":
     if sys.argv[1] == "manual":
         uart.write(GLITCH_DEFAULT_UART_TRIGGER_EXP_BYTE)
     elif sys.argv[1] in RPC_COMMANDS:
-        send_rpc_cmd(sys.argv[1], [int(arg, 16) for arg in sys.argv[2:]])
+        argv = []
+        for arg in sys.argv[2:]:
+            if arg.startswith('0x'):
+                argv.append(int(arg, 16))
+            else:
+                argv.append(int(arg))
+        send_rpc_cmd(sys.argv[1], argv)
     uart.close()

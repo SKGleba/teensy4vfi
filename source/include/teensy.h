@@ -77,6 +77,7 @@
 #define teensy_uart_scanns(uartn, out, out_size, timeout) uart_scanns(teensy_uart_get_imx_bus(uartn), out, out_size, timeout)
 #define teensy_uart_rxfifo_flush(uartn) uart_rxfifo_flush(teensy_uart_get_imx_bus(uartn))
 #define teensy_uart_txfifo_flush(uartn) uart_txfifo_flush(teensy_uart_get_imx_bus(uartn))
+#define teensy_uart_wait_tc(uartn) uart_wait_tc(teensy_uart_get_imx_bus(uartn))
 
 extern const uint8_t teensy_pad_to_port[40];
 extern uint8_t teensy_pad_to_gpio_bus[40];

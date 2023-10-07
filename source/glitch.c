@@ -144,6 +144,7 @@ int glitch_configure_default(int type, uint32_t offset, uint32_t offset_mult, ui
             ;
         ret = glitch_configure(&config);
         if (ret >= 0) {
+            teensy_uart_wait_tc(GLITCH_DEFAULT_UART_TRIGGER_UARTN);
             ret = teensy_uart_init( // TODO: should we actually have RX FIFO enabled?
                 GLITCH_DEFAULT_UART_TRIGGER_UARTN,
                 GLITCH_DEFAULT_UART_TRIGGER_BAUD,
