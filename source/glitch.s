@@ -12,6 +12,7 @@
 #
 # s_glitch
 # registers:
+#
 #   r0-r2: gp
 #   
 #   r3: offset
@@ -25,70 +26,46 @@
 #   r10: trigger reg mask
 #   r11: trigger DATA reg
 #
+#   r12: next glitch config
+#
 .global s_glitch
 .thumb_func
 s_glitch:
-    push {r0-r12, lr}
-    # preload main vars
-    ldr r0, =g_glitch_varray_main
-    ldmia r0!, {r3-r8}
-
-    # preload func-specific args
-    ldr r0, =g_glitch_varray
-    ldmia r0!, {r9-r11}
+    push {r1-r12, lr}
+    # preload vars & args
+1:
+    ldmia r0!, {r3-r12}
 
     # ready, wait for trigger
-1:
+2:
     ldr r1,[r11]
     and r1,r1,r10
     cmp r1,r9
-    bne 1b
+    bne 2b
 
     # wait [offset] * [offset_mult]
-2:
-    mov r2, r3
 3:
+    mov r2, r3
+4:
     subs r2, #0x1
-    bne 3b
+    bne 4b
     subs r4, #0x1
-    bne 2b
+    bne 3b
 
     # drive
     str r6,[r7]
 
     # wait [width]
-4:
+5:
     subs r5, #0x1
-    bne 4b
+    bne 5b
 
     # stop
     str r6,[r8]
 
+    # execute next if/in chain
+    movs r0, r12
+    bne 1b
+
     # bye
-    pop {r0-r12, pc}
-
-
-
-.data
-.section .data.glitch_vars
-
-.macro ADD_GLITCH_VAR name value:vararg
-.global g_glitch_\name
-g_glitch_\name:
-	.word \value
-.endm
-
-.global g_glitch_varray_main
-g_glitch_varray_main:
-ADD_GLITCH_VAR offset 0x10000000
-ADD_GLITCH_VAR offset_mult 1
-ADD_GLITCH_VAR width 0x10000000
-ADD_GLITCH_VAR driver_ports 1<<24
-ADD_GLITCH_VAR driver_set_reg 0x401B8084
-ADD_GLITCH_VAR driver_clr_reg 0x401B8088
-
-.global g_glitch_varray
-g_glitch_varray:
-ADD_GLITCH_VAR trigger_exp_state 1<<25
-ADD_GLITCH_VAR trigger_ports 1<<25
-ADD_GLITCH_VAR trigger_data_reg 0x401B8000
+    pop {r1-r12, pc}

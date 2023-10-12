@@ -26,7 +26,7 @@ void rpc_loop(void) {
             print(RPC_WATERMARK "G1\n");
             scanb(data, cmd.data_size);
         }
-        
+
         cret = -1;
         switch (cmd.id) {
         case RPC_CMD_NOP:
@@ -60,22 +60,28 @@ void rpc_loop(void) {
             cret = (uint32_t)memset32((void*)data[0], data[1], data[2]);
             break;
         case RPC_CMD_GLITCH_PREP_LL:
-            cret = glitch_configure_default(GLITCH_CONFIG_DEFAULT_TYPE_LOGIC_LEVEL, data[0], data[1], data[2]);
+            cret = glitch_configure_default(BITN(GLITCH_CONFIG_DEFAULT_TYPE_BITS_LOGIC_LEVEL) | (data[3] << GLITCH_CONFIG_DEFAULT_TYPE_BITS_FLAG_CHAIN), data[0], data[1], data[2]);
             break;
         case RPC_CMD_GLITCH_ARM:
             if (data[0])
                 printf(RPC_WATERMARK "ARMED!\n", cret);
-            glitch_arm();
+            glitch_arm(g_glitch_varray);
             cret = 0;
             break;
         case RPC_CMD_GLITCH_PREP_CUSTOM:
-            cret = glitch_configure((glitch_config_s*)data);
+            cret = glitch_configure((glitch_config_s*)data, false);
             break;
         case RPC_CMD_GLITCH_PREP_UART:
-            cret = glitch_configure_default(GLITCH_CONFIG_DEFAULT_TYPE_UART, data[0], data[1], data[2]);
+            cret = glitch_configure_default(BITN(GLITCH_CONFIG_DEFAULT_TYPE_BITS_UART) | (data[3] << GLITCH_CONFIG_DEFAULT_TYPE_BITS_FLAG_CHAIN), data[0], data[1], data[2]);
             break;
         case RPC_CMD_SET_CLK:
             cret = ccm_set_core_clkf(data[1], data[0]);
+            break;
+        case RPC_CMD_GLITCH_PREP_CUSTOM_CHAIN:
+            cret = glitch_configure((glitch_config_s*)data, true);
+            break;
+        case RPC_CMD_GLITCH_PREP_NONE:
+            cret = glitch_configure_default(BITN(GLITCH_CONFIG_DEFAULT_TYPE_BITS_FLAG_NOTRIGGER) | (data[3] << GLITCH_CONFIG_DEFAULT_TYPE_BITS_FLAG_CHAIN), data[0], data[1], data[2]);
             break;
         default:
             break;

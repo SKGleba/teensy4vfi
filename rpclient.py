@@ -22,7 +22,9 @@ RPC_COMMANDS = {
     "glitch_arm" : 0xa,
     "glitch_prep_custom" : 0xb,
     "glitch_prep_uart" : 0xc,
-    "set_clk" : 0xd
+    "set_clk" : 0xd,
+    "glitch_prep_custom_chain" : 0xe,
+    "glitch_prep_none" : 0xf
 }
 
 uart = serial.Serial(DEFAULT_PORT, baudrate=DEFAULT_BAUD, timeout=0)
