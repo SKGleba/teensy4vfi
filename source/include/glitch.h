@@ -5,7 +5,7 @@
 #include "defs.h"
 #include "teensy.h"
 
-#define GLITCH_STATIC_CHAIN_N 4 // for static mem alloc
+#define GLITCH_STATIC_CHAIN_N 16 // for static mem alloc
 
 #define GLITCH_DEFAULT_CLKSPEED 600000000 // 600Mhz
 #define GLITCH_DEFAULT_FUNC s_glitch
@@ -17,18 +17,27 @@
 #define GLITCH_DEFAULT_DRIVER_DSE_DIV 6
 
 #define GLITCH_DEFAULT_LL_TRIGGER_PAD 23
+#define GLITCH_DEFAULT_LL_TRIGGER_EXP_STATE true // trigger on hi
+#define GLITCH_DEFAULT_LL_TRIGGER_PK_EN false // disable pull/keep
+#define GLITCH_DEFAULT_LL_TRIGGER_PUE false // keeper
+#define GLITCH_DEFAULT_LL_TRIGGER_PULL_TYPE 0 // disabled
+#define GLITCH_DEFAULT_LL_TRIGGER_HYS_EN false // no hysteresis
+
+/* enhanced precision?
+#define GLITCH_DEFAULT_LL_TRIGGER_PAD 23
 #define GLITCH_DEFAULT_LL_TRIGGER_EXP_STATE false // trigger on lo
-#define GLITCH_DEFAULT_LL_TRIGGER_PULL_EN true
+#define GLITCH_DEFAULT_LL_TRIGGER_PK_EN true // disable pull/keep
+#define GLITCH_DEFAULT_LL_TRIGGER_PUE true // pull
 #define GLITCH_DEFAULT_LL_TRIGGER_PULL_TYPE IOMUXC_PORT_CTL_PUS_22K_PULL_UP
-#define GLITCH_DEFAULT_LL_TRIGGER_HYS_EN false
-#define GLITCH_DEFAULT_LL_TRIGGER_DSE_DIV 7
+#define GLITCH_DEFAULT_LL_TRIGGER_HYS_EN false // no hysteresis
+*/
 
 #define GLITCH_DEFAULT_UART_TRIGGER_UARTN DEBUG_UARTN
 #define GLITCH_DEFAULT_UART_TRIGGER_EXP_BYTE 0xD9
-#define GLITCH_DEFAULT_UART_TRIGGER_PULL_EN true
+#define GLITCH_DEFAULT_UART_TRIGGER_PK_EN true
+#define GLITCH_DEFAULT_UART_TRIGGER_PUE true // pull
 #define GLITCH_DEFAULT_UART_TRIGGER_PULL_TYPE IOMUXC_PORT_CTL_PUS_22K_PULL_UP
 #define GLITCH_DEFAULT_UART_TRIGGER_HYS_EN true
-#define GLITCH_DEFAULT_UART_TRIGGER_DSE_DIV 7
 #define GLITCH_DEFAULT_UART_TRIGGER_BAUD UART_BAUD_115200
 #define GLITCH_DEFAULT_UART_TRIGGER_INIT_TX true
 #define GLITCH_DEFAULT_UART_TRIGGER_INIT_TX_FIFO true
@@ -44,18 +53,27 @@ enum GLITCH_CONFIG_DEFAULT_TYPES_BITS {
 
 enum GLITCH_PAD_CTL_BITS {
     GLITCH_PAD_CTL_BITS_TEENSY_PAD = 0,
-    GLITCH_PAD_CTL_BITS_TEENSY_UARTN = 0,
-    GLITCH_PAD_CTL_BITS_ALT_MODE = 8,
-    GLITCH_PAD_CTL_BITS_DSE,
-    GLITCH_PAD_CTL_BITS_PUE = 12, // 0: Keep | 1: Pull
-    GLITCH_PAD_CTL_BITS_PUS,
-    GLITCH_PAD_CTL_BITS_HYS = 15,
-    GLITCH_PAD_CTL_BITS_TRIGGER_STATE = 16,
-    GLITCH_PAD_CTL_BITS_TRIGGER_UART_WATERMARK = 16
+    GLITCH_PAD_CTL_BITS_IGNORE = 6,
+    GLITCH_PAD_CTL_BITS_RECONFIGURE // apply config
 };
-#define GLITCH_PAD_CTL_BITMASK_TEENSY_PAD 0xff
-#define GLITCH_PAD_CTL_BITMASK_TEENSY_UARTN 0xff
-#define GLITCH_PAD_CTL_BITMASK_TEENSY_UART_WATERMARK 0xff
+#define GLITCH_PAD_CTL_BITMASK_TEENSY_PAD 0x3f
+
+enum GLITCH_INPUT_PAD_CTL_BITS {
+    GLITCH_INPUT_PAD_CTL_BITS_TEENSY_UARTN = 0,
+    GLITCH_INPUT_PAD_CTL_BITS_UART_MODE = 8,
+    GLITCH_INPUT_PAD_CTL_BITS_PKE, // enable pull/keep
+    GLITCH_INPUT_PAD_CTL_BITS_PUE, // 0: Keep | 1: Pull
+    GLITCH_INPUT_PAD_CTL_BITS_PUS, // pull/keep strength
+    GLITCH_INPUT_PAD_CTL_BITS_HYS = 13, // enable hysteresis
+    GLITCH_INPUT_PAD_CTL_BITS_TRIGGER_STATE = 16,
+    GLITCH_INPUT_PAD_CTL_BITS_TRIGGER_UART_WATERMARK = 16
+};
+#define GLITCH_INPUT_PAD_CTL_BITMASK_TEENSY_UARTN GLITCH_PAD_CTL_BITMASK_TEENSY_PAD
+#define GLITCH_INPUT_PAD_CTL_BITMASK_TEENSY_UART_WATERMARK 0xff
+enum GLITCH_OUTPUT_PAD_CTL_BITS {
+    GLITCH_OUTPUT_PAD_CTL_BITS_ODE = 8, // open-drain mode (TODO: support)
+    GLITCH_OUTPUT_PAD_CTL_BITS_DSE, // drive strength
+};
 
 struct _glitch_config_s {
     uint32_t width;
@@ -100,6 +118,6 @@ extern glitch_varray_s g_glitch_varray[GLITCH_STATIC_CHAIN_N];
 extern void (*glitch_arm)(glitch_varray_s *varray);
 void s_glitch(glitch_varray_s* varray);
 int glitch_configure(glitch_config_s* config, bool add_to_chain);
-int glitch_configure_default(int type, uint32_t offset, uint32_t offset_mult, uint32_t width);
+int glitch_configure_default(int type, uint32_t offset, uint32_t offset_mult, uint32_t width, int trigger_pad, int trigger_state, int driver_pad);
 
 #endif
