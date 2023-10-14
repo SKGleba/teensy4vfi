@@ -154,6 +154,7 @@ int glitch_configure_default(int type, uint32_t offset, uint32_t offset_mult, ui
         config.driver_ctl = BITN(GLITCH_PAD_CTL_BITS_IGNORE);
     else {
         config.driver_ctl = BITNVALM(GLITCH_PAD_CTL_BITS_TEENSY_PAD, driver_pad, GLITCH_PAD_CTL_BITMASK_TEENSY_PAD)
+            | BITN(GLITCH_PAD_CTL_BITS_RECONFIGURE)
             | BITNVALM(GLITCH_OUTPUT_PAD_CTL_BITS_DSE, GLITCH_DEFAULT_DRIVER_DSE_DIV, IOMUXC_PORT_CTL_BITMASK_DSE)
             ;
     }
@@ -169,6 +170,7 @@ int glitch_configure_default(int type, uint32_t offset, uint32_t offset_mult, ui
                 trigger_state = GLITCH_DEFAULT_LL_TRIGGER_EXP_STATE;
             }
             config.trigger_ctl = BITNVALM(GLITCH_PAD_CTL_BITS_TEENSY_PAD, trigger_pad, GLITCH_PAD_CTL_BITMASK_TEENSY_PAD)
+                | BITN(GLITCH_PAD_CTL_BITS_RECONFIGURE)
                 | BITNVALM(GLITCH_INPUT_PAD_CTL_BITS_TRIGGER_STATE, trigger_state, 1)
                 | BITNVAL(GLITCH_INPUT_PAD_CTL_BITS_PKE, GLITCH_DEFAULT_LL_TRIGGER_PK_EN)
                 | BITNVAL(GLITCH_INPUT_PAD_CTL_BITS_PUE, GLITCH_DEFAULT_LL_TRIGGER_PUE)
@@ -183,6 +185,7 @@ int glitch_configure_default(int type, uint32_t offset, uint32_t offset_mult, ui
                 trigger_state = GLITCH_DEFAULT_UART_TRIGGER_EXP_BYTE;
             }
             config.trigger_ctl = BITNVALM(GLITCH_PAD_CTL_BITS_TEENSY_PAD, trigger_pad, GLITCH_PAD_CTL_BITMASK_TEENSY_PAD)
+                | BITN(GLITCH_PAD_CTL_BITS_RECONFIGURE)
                 | BITNVALM(GLITCH_INPUT_PAD_CTL_BITS_TRIGGER_UART_WATERMARK, trigger_state, GLITCH_INPUT_PAD_CTL_BITMASK_TEENSY_UART_WATERMARK)
                 | BITNVAL(GLITCH_INPUT_PAD_CTL_BITS_PKE, GLITCH_DEFAULT_UART_TRIGGER_PK_EN)
                 | BITNVAL(GLITCH_INPUT_PAD_CTL_BITS_PUE, GLITCH_DEFAULT_UART_TRIGGER_PUE)
