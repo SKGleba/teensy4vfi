@@ -1,10 +1,8 @@
-import sys, os, struct, code, binascii
-import serial, time, re, math
+import sys, struct
+import serial
 
 DEFAULT_PORT = 'COM18'
 DEFAULT_BAUD = 115200
-
-GLITCH_DEFAULT_UART_TRIGGER_EXP_BYTE = b'\xD9'
 
 RPC_MAGIC = b'@'
 RPC_WATERMARK = b'!PC_'
@@ -27,13 +25,43 @@ RPC_COMMANDS = {
     "glitch_prep_none" : 0xf
 }
 
-uart = serial.Serial(DEFAULT_PORT, baudrate=DEFAULT_BAUD, timeout=0)
+DEFAULT_DRIVER_PAD = 22
+DEFAULT_LL_TRIGGER_PAD = 23
+DEFAULT_UART_TRIGGER_N = 1
+DEFAULT_UART_TRIGGER_EXP_BYTE = b'\xD9'
+DEFAULT_ARG_DICT = {
+    "offset" : 1,
+    "offset_mult" : 1,
+    "width" : 1,
+    "trigger" : 23,
+    "trigger_state" : 0,
+    "driver" : 22,
+    "queue" : 0,
+    "no_trigger" : 0,
+    "no_driver" : 0,
+    "uart_mode" : False,
+    "override" : False,
+    "clockspeed" : 0,
+    "driver_mask" : 0,
+    "driver_set_drive" : 0,
+    "driver_set_stop" : 0,
+    "trigger_mask" : 0, # MUST SET trigger_exp TOO
+    "trigger_exp" : 0,
+    "trigger_get" : 0
+}
+
+uart = serial.Serial(DEFAULT_PORT, baudrate=DEFAULT_BAUD, timeout=1)
 
 def send_rpc_cmd(id, argv):
     data = bytearray()
     for arg in argv:
         data.extend(struct.pack('<I', arg))
-    uart.write(bytearray([int.from_bytes(RPC_MAGIC, "little"), RPC_COMMANDS[id], len(data), (RPC_COMMANDS[id] + len(data))]))
+    headr = bytearray([int.from_bytes(RPC_MAGIC, "little"), RPC_COMMANDS[id], len(data), (RPC_COMMANDS[id] + len(data))])
+    #print(headr.hex().upper())
+    #print(data.hex().upper())
+    uart.reset_output_buffer()
+    uart.reset_input_buffer()
+    uart.write(headr)
     cont = uart.readline()
     while not RPC_WATERMARK in cont:
         cont = uart.readline()
@@ -45,15 +73,45 @@ def send_rpc_cmd(id, argv):
     cont = cont.decode('utf-8').strip("!PC_")
     print(cont)
 
-if __name__ == "__main__":
-    if sys.argv[1] == "manual":
-        uart.write(GLITCH_DEFAULT_UART_TRIGGER_EXP_BYTE)
-    elif sys.argv[1] in RPC_COMMANDS:
-        argv = []
-        for arg in sys.argv[2:]:
-            if arg.startswith('0x'):
-                argv.append(int(arg, 16))
+def glitch_add(argd):
+    cmd = "glitch_prep_ll"
+    if argd["uart_mode"] == True:
+        cmd = "glitch_prep_uart"
+    #print(argd)
+    flags = argd["queue"] | (argd["no_driver"] << 1) | (argd["no_trigger"] << 2)
+    argv = [argd["offset"], argd["offset_mult"], argd["width"], flags, argd["trigger"], argd["trigger_state"], argd["driver"]]
+    #print(argv)
+    send_rpc_cmd(cmd, argv)
+
+def handle_cmd(cmd, argv):
+    match cmd:
+        case "manual":
+            return uart.write(DEFAULT_UART_TRIGGER_EXP_BYTE)
+        case "glitch_add":
+            arg_dict = DEFAULT_ARG_DICT.copy()
+            for arg in argv:
+                key, val = arg.split('=')
+                if val.startswith('0x'):
+                    arg_dict[key] = int(val, 16)
+                else:
+                    arg_dict[key] = int(val)
+            if arg_dict["override"] == True:
+                return print("not yet supported!")
             else:
-                argv.append(int(arg))
-        send_rpc_cmd(sys.argv[1], argv)
+                return glitch_add(arg_dict)
+        case _:
+            if cmd in RPC_COMMANDS:
+                rargv = []
+                for arg in argv:
+                    if arg.startswith('0x'):
+                        rargv.append(int(arg, 16))
+                    else:
+                        rargv.append(int(arg))
+                return send_rpc_cmd(cmd, rargv)
+            else:
+                print("command not found and/or malformed input")
+    return ""
+
+if __name__ == "__main__":
+    handle_cmd(sys.argv[1], sys.argv[2:])
     uart.close()

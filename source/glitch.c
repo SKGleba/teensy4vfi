@@ -65,7 +65,7 @@ int glitch_configure(glitch_config_s* config, bool add_to_chain) {
         int trigger_pad_ctl = IOMUXC_PORT_CTL_FIELD(
             true,                                                                                                   // fast slew rate
             false,                                                                                                  // n/a
-            IOMUXC_PORT_CTL_SPEED(4),                                                                               // 200Mhz
+            IOMUXC_PORT_CTL_SPEED(4),                                                                               // 200Mhz, shouldnt matter anyways
             false,                                                                                                  // n/a
             !!(config->trigger_ctl & BITN(GLITCH_INPUT_PAD_CTL_BITS_PKE)),                                          // enable pull/keep
             !!(config->trigger_ctl & BITN(GLITCH_INPUT_PAD_CTL_BITS_PUE)),                                          // pull?
