@@ -25,7 +25,7 @@ flashcfg: # size is 0x200, FlexSPI config block
     .byte 8
     .byte 0
     .word 0, 0
-    .word 0x00200000, 0
+    .word cfg_sflashA1Size, 0
     .word 0, 0
     .word 0, 0, 0, 0
     .word 0

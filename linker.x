@@ -2,12 +2,13 @@
 	linker "inspired" by teensy4 core's linker
 		https://github.com/PaulStoffregen/cores/blob/master/teensy4/imxrt1062.ld
 */
+/* IN: TARGET_TEENSY41 (0/1) */
 MEMORY
 {
 	ITCM (rwx): ORIGIN = 0x00000000, LENGTH = 512K
     DTCM (rwx): ORIGIN = 0x20000000, LENGTH = 512K
 	OCRAM (rwx): ORIGIN = 0x20200000, LENGTH = 512K
-	FLASH (rwx): ORIGIN = 0x60000000, LENGTH = 1984K
+	FLASH (rwx): ORIGIN = 0x60000000, LENGTH = TARGET_TEENSY41 ? 7936K : 1984K
 }
 
 ENTRY(some_other_header)
@@ -61,4 +62,7 @@ SECTIONS
 
 	/* overall size for flashcfg */
     cfg_prog_size = SIZEOF(.boot) + SIZEOF(.itcm) + SIZEOF(.dtcm);
+
+	/* diff between teensy4 and teensy4.1 */
+	cfg_sflashA1Size = TARGET_TEENSY41 ? 0x00800000 : 0x00200000;
 }

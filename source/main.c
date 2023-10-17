@@ -10,7 +10,7 @@
 #include "include/rpc.h"
 #include "include/glitch.h"
 
-void main();
+int main();
 void test();
 
 void init() {
@@ -36,7 +36,7 @@ void init() {
         wfi();
 }
 
-void main() {
+int main() {
 
     test();
 

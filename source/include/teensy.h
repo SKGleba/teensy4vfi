@@ -1,6 +1,7 @@
 #ifndef __TEENSY_H__
 #define __TEENSY_H__
 
+#include "defs.h"
 #include "gpio.h"
 #include "uart.h"
 #include "iomuxc.h"
@@ -23,6 +24,10 @@
 #define TEENSY_PAD_UART6_TX 24
 #define TEENSY_PAD_UART7_RX 28
 #define TEENSY_PAD_UART7_TX 29
+#ifdef TARGET_TEENSY41
+#define TEENSY_PAD_UART8_RX 34
+#define TEENSY_PAD_UART8_TX 35
+#endif
 
 // generic mux modes
 #define TEENSY_PAD_MODE_UART 2
@@ -36,7 +41,15 @@
 #define TEENSY_UART5_IMX_BUS 8
 #define TEENSY_UART6_IMX_BUS 1
 #define TEENSY_UART7_IMX_BUS 7
+#ifndef TARGET_TEENSY41
+#define TEENSY_UARTN_COUNT 7
 #define teensy_get_uartn_isv(uartn) ((0x1f10121f >> (uartn * 4)) & 0xf)
+#else
+#define TEENSY_UARTN_COUNT 8
+#define teensy_get_uartn_isv(uartn) (uartn ? ((0x11f10121 >> ((uartn - 1) * 4)) & 0xf) : 0xf)
+#define TEENSY_UART8_IMX_BUS 5
+#endif
+
 
 // use _direct funcs only with abs args
 #define teensy_get_pad_port_direct(pad) TEENSY_PAD_ ## pad ## _PORT
@@ -79,9 +92,9 @@
 #define teensy_uart_txfifo_flush(uartn) uart_txfifo_flush(teensy_uart_get_imx_bus(uartn))
 #define teensy_uart_wait_tc(uartn) uart_wait_tc(teensy_uart_get_imx_bus(uartn))
 
-extern const uint8_t teensy_pad_to_port[40];
-extern uint8_t teensy_pad_to_gpio_bus[40];
-extern uint8_t teensy_uartn_to_imxbus_rx_tx[8][3];
+extern const uint8_t teensy_pad_to_port[TEENSY_PADS_COUNT];
+extern uint8_t teensy_pad_to_gpio_bus[TEENSY_PADS_COUNT];
+extern uint8_t teensy_uartn_to_imxbus_rx_tx[TEENSY_UARTN_COUNT + 1][3];
 
 void teensy_pad_logic_ctrl_tightness(int pad, bool tight, bool wait);
 int teensy_uart_init(int teensy_uartn, int baud, int init_bitflags, bool wait);
