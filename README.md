@@ -6,7 +6,6 @@ This project is in its very early stages, it also serves as a way for me to lear
 Some code might make no sense and/or be overcomplicated, suggestions and non-C++ PRs are welcome.
 
 ## Known TODOs
- - teensy 4.1-specific pad mux modes enums
  - Critical bug fixes
  - Docs, readme, measurements, etc
  - More glitch types

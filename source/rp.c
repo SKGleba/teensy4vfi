@@ -3,6 +3,7 @@
 #include "include/debug.h"
 #include "include/utils.h"
 #include "include/glitch.h"
+#include "include/custom.h"
 
 #include "include/rpc.h"
 
@@ -82,6 +83,9 @@ void rpc_loop(void) {
             break;
         case RPC_CMD_GLITCH_PREP_NONE:
             cret = glitch_configure_default(BITN(GLITCH_CONFIG_DEFAULT_TYPE_BITS_FLAG_NOTRIGGER) | (data[3] << GLITCH_CONFIG_DEFAULT_TYPE_BITS_FLAG_CHAIN), data[0], data[1], data[2], data[4], data[5], data[6]);
+            break;
+        case RPC_CMD_CUSTOM:
+            cret = (uint32_t)custom_main(data[0], data[1], data[2], data);
             break;
         default:
             break;

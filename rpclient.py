@@ -1,3 +1,5 @@
+# bare-bones rpc client implementation for teensy4vfi
+
 import sys, struct
 import serial
 
@@ -22,7 +24,8 @@ RPC_COMMANDS = {
     "glitch_prep_uart" : 0xc,
     "set_clk" : 0xd,
     "glitch_prep_custom_chain" : 0xe,
-    "glitch_prep_none" : 0xf
+    "glitch_prep_none" : 0xf,
+    "custom" : 0x10
 }
 
 DEFAULT_DRIVER_PAD = 22
@@ -39,7 +42,9 @@ DEFAULT_ARG_DICT = {
     "queue" : 0,
     "no_trigger" : 0,
     "no_driver" : 0,
+
     "uart_mode" : False,
+
     "override" : False,
     "clockspeed" : 0,
     "driver_mask" : 0,
@@ -47,7 +52,17 @@ DEFAULT_ARG_DICT = {
     "driver_set_stop" : 0,
     "trigger_mask" : 0, # MUST SET trigger_exp TOO
     "trigger_exp" : 0,
-    "trigger_get" : 0
+    "trigger_get" : 0,
+
+    "driver_reconfigure" : False,
+    "driver_ode" : 0,
+    "driver_dse" : 7,
+
+    "trigger_reconfigure" : False,
+    "trigger_pke" : 0,
+    "trigger_pue" : 0,
+    "trigger_pus" : 0,
+    "trigger_hys" : 0,
 }
 
 uart = serial.Serial(DEFAULT_PORT, baudrate=DEFAULT_BAUD, timeout=1)
@@ -74,12 +89,28 @@ def send_rpc_cmd(id, argv):
     print(cont)
 
 def glitch_add(argd):
+    #print(argd)
     cmd = "glitch_prep_ll"
     if argd["uart_mode"] == True:
         cmd = "glitch_prep_uart"
-    #print(argd)
     flags = argd["queue"] | (argd["no_driver"] << 1) | (argd["no_trigger"] << 2)
     argv = [argd["offset"], argd["offset_mult"], argd["width"], flags, argd["trigger"], argd["trigger_state"], argd["driver"]]
+    #print(argv)
+    send_rpc_cmd(cmd, argv)
+
+def glitch_add_direct(argd):
+    #print(argd)
+    cmd = "glitch_prep_custom"
+    if argd["queue"] == 1:
+        cmd = "glitch_prep_custom_chain"
+    #TODO: maybe handle it in a nice dictionary/array where idx = bit shift?
+    trigger_ctl = argd["trigger"] | (argd["no_trigger"] << 6) | (int(argd["uart_mode"] == True) << 8) | (argd["trigger_state"] << 16)
+    if argd["trigger_reconfigure"] == True:
+        trigger_ctl = trigger_ctl | (1 << 7) | (argd["trigger_pke"] << 9) | (argd["trigger_pue"] << 10) | (argd["trigger_pus"] << 11) | (argd["trigger_hys"] << 13)
+    driver_ctl = argd["driver"] | (argd["no_driver"] << 6)
+    if argd["driver_reconfigure"] == True:
+        driver_ctl = driver_ctl | (1 << 7) | (argd["driver_ode"] << 8) | (argd["driver_dse"] << 9)
+    argv = [argd["width"], argd["offset"], argd["offset_mult"], trigger_ctl, driver_ctl, argd["clockspeed"], argd["driver_mask"], argd["driver_set_drive"], argd["driver_set_stop"], argd["trigger_mask"], argd["trigger_exp"], argd["trigger_get"]]
     #print(argv)
     send_rpc_cmd(cmd, argv)
 
@@ -96,7 +127,7 @@ def handle_cmd(cmd, argv):
                 else:
                     arg_dict[key] = int(val)
             if arg_dict["override"] == True:
-                return print("not yet supported!")
+                return glitch_add_direct(arg_dict)
             else:
                 return glitch_add(arg_dict)
         case _:
