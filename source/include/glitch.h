@@ -5,7 +5,7 @@
 #include "defs.h"
 #include "teensy.h"
 
-#define GLITCH_STATIC_CHAIN_N 16 // for static mem alloc
+#define GLITCH_STATIC_CHAIN_N 8 // for static mem alloc
 
 #define GLITCH_DEFAULT_CLKSPEED 600000000 // 600Mhz
 #define GLITCH_DEFAULT_FUNC s_glitch
@@ -111,7 +111,9 @@ struct _glitch_varray_s {
 };
 typedef struct _glitch_varray_s glitch_varray_s;
 
-extern glitch_varray_s g_glitch_varray[GLITCH_STATIC_CHAIN_N];
+extern glitch_varray_s* g_glitch_varray;
+extern glitch_varray_s g_static_glitch_varray[GLITCH_STATIC_CHAIN_N];
+extern int g_glitch_max_chain_n;
 
 // TODO: glitch_intr() with intrs 
 

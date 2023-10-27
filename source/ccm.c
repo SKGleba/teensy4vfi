@@ -102,6 +102,7 @@ int ccm_calculate_core_clkf(int desired_freq) {
     return clkf;
 }
 
+// TODO: overclock? apparently it can be stable at 1GHz with ext cooling, need to test AHB too
 int ccm_set_core_clkf(int core_clkf, int desired_freq) {
     // we can slowly calc args here
     if (!core_clkf && desired_freq) {

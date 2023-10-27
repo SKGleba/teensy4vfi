@@ -5,7 +5,10 @@
 
 #include "include/glitch.h"
 
-glitch_varray_s g_glitch_varray[GLITCH_STATIC_CHAIN_N];
+int g_glitch_max_chain_n = GLITCH_STATIC_CHAIN_N;
+glitch_varray_s* g_glitch_varray = g_static_glitch_varray;
+glitch_varray_s g_static_glitch_varray[GLITCH_STATIC_CHAIN_N];
+
 void (*glitch_arm)(glitch_varray_s* varray) = (void*)GLITCH_DEFAULT_FUNC;
 
 // uart mode does NOT configure the uart receiver, only the pad
@@ -37,7 +40,7 @@ int glitch_configure(glitch_config_s* config, bool add_to_chain) {
             varray = varray->next;
             add_to_chain++;
         }
-        if (add_to_chain >= GLITCH_STATIC_CHAIN_N)
+        if (add_to_chain >= g_glitch_max_chain_n)
             return -4;
         varray = varray->next = &g_glitch_varray[add_to_chain];
     }

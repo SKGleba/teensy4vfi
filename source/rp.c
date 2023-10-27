@@ -4,6 +4,7 @@
 #include "include/utils.h"
 #include "include/glitch.h"
 #include "include/custom.h"
+#include "include/cfg.h"
 
 #include "include/rpc.h"
 
@@ -82,10 +83,57 @@ void rpc_loop(void) {
             cret = glitch_configure((glitch_config_s*)data, true);
             break;
         case RPC_CMD_GLITCH_PREP_NONE:
-            cret = glitch_configure_default(BITN(GLITCH_CONFIG_DEFAULT_TYPE_BITS_FLAG_NOTRIGGER) | (data[3] << GLITCH_CONFIG_DEFAULT_TYPE_BITS_FLAG_CHAIN), data[0], data[1], data[2], data[4], data[5], data[6]);
+            cret = glitch_configure_default(BITN(GLITCH_CONFIG_DEFAULT_TYPE_BITS_FLAG_NOTRIGGER) | (data[3] << GLITCH_CONFIG_DEFAULT_TYPE_BITS_FLAG_CHAIN), data[0], data[1], data[2], 0, 0, data[4]);
             break;
         case RPC_CMD_CUSTOM:
             cret = (uint32_t)custom_main(data[0], data[1], data[2], data);
+            break;
+        case RPC_CMD_UART_INIT:
+            cret = (uint32_t)teensy_uart_init(data[0], data[1], data[2], true);
+            break;
+        case RPC_CMD_PAD_CONFIGURE:
+            cret = (uint32_t)teensy_set_pad_ctl(data[0], data[1], data[2], true);
+            break;
+        case RPC_CMD_PAD_CTRL_LOGIC: // arg0: func, arg1: pad, arg2: wait
+            cret = 0;
+            switch (data[0]) {
+            case RPC_CMD_PAD_CTRL_LOGIC_CLEAR:
+                teensy_pad_logic_clear(data[1], data[2]);
+                break;
+            case RPC_CMD_PAD_CTRL_LOGIC_SET:
+                teensy_pad_logic_set(data[1], data[2]);
+                break;
+            case RPC_CMD_PAD_CTRL_LOGIC_TOGGLE:
+                teensy_pad_logic_toggle(data[1], data[2]);
+                break;
+            case RPC_CMD_PAD_CTRL_LOGIC_MODE: // arg3: output?
+                cret = teensy_pad_logic_mode(data[1], data[3], data[2]);
+                break;
+            case RPC_CMD_PAD_CTRL_LOGIC_READ: // arg3: wait target
+                cret = teensy_pad_logic_read(data[1], data[2], data[3]);
+                break;
+            case RPC_CMD_PAD_CTRL_LOGIC_TIGHTNESS: // arg3: tight?
+                teensy_pad_logic_ctrl_tightness(data[1], data[3], data[2]);
+                break;
+            default:
+                break;
+            }
+            break;
+        case RPC_CMD_GLITCH_SET_CHAIN_MAX: // arg0: new max chain element count, arg1: use """"heap""""?, arg2: memset0 the varray?
+            if (data[1]) {
+                g_glitch_varray = (glitch_varray_s *)&cfg_prog_bss_end;
+                g_glitch_max_chain_n = data[0] ? data[0] : GLITCH_STATIC_CHAIN_N;
+            } else {
+                g_glitch_varray = g_static_glitch_varray;
+                g_glitch_max_chain_n = (data[0] && (data[0] <= GLITCH_STATIC_CHAIN_N)) ? data[0] : GLITCH_STATIC_CHAIN_N;
+            }
+            if (data[2])
+                memset32(g_glitch_varray, 0, (g_glitch_max_chain_n * sizeof(glitch_varray_s)));
+            cret = (uint32_t)g_glitch_varray;
+            break;
+        case RPC_CMD_GET_SP:
+            cret = 0;
+            asm volatile ("mov %0, sp\n\t" : "=r" (cret));
             break;
         default:
             break;
