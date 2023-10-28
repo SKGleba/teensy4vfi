@@ -48,9 +48,9 @@ DEFAULT_ARG_DICT = {                    # our glitch_add vars with default prese
     "no_trigger" : [0, "skip the glitch trigger"],
     "no_driver" : [0, "skip the glitch driver"],
 
-    "uart_mode" : [False, "this glitch uses an uart trigger"],
+    "uart_mode" : [0, "set this glitch to use an uart trigger"],
 
-    "override" : [False, "set this to enable default config overrides (O)"],
+    "override" : [0, "set this to enable default config overrides (O)"],
     "clockspeed" : [0, "(O) glitch clockspeed / core frequency"],
     "driver_mask" : [0, "(O) glitch driver start/stop pattern"],
     "driver_set_drive" : [0, "(O) glitch driver start register addr"],
@@ -59,11 +59,11 @@ DEFAULT_ARG_DICT = {                    # our glitch_add vars with default prese
     "trigger_exp" : [0, "(O) trigger expected data pattern"],
     "trigger_get" : [0, "(O) trigger data pattern register addr"],
 
-    "driver_reconfigure" : [False, "(O) set this to reconfigure the driver pad (D)"],
+    "driver_reconfigure" : [0, "(O) set this to reconfigure the driver pad (D)"],
     "driver_ode" : [0, "(O) (D) enable open-drain mode"],
     "driver_dse" : [7, "(O) (D) set drive strength divider"],
 
-    "trigger_reconfigure" : [False, "(O) set this to reconfigure the trigger pad (T)"],
+    "trigger_reconfigure" : [0, "(O) set this to reconfigure the trigger pad (T)"],
     "trigger_pke" : [0, "(O) (T) enable pull/keep"],
     "trigger_pue" : [0, "(O) (T) set pull mode"],
     "trigger_pus" : [0, "(O) (T) set pull type"],
@@ -96,26 +96,26 @@ def send_rpc_cmd(id, argv):
 def glitch_add(argd):
     #print(argd)
     cmd = "glitch_prep_ll"
-    if argd["uart_mode"][0] == True:
+    if argd["uart_mode"] == 1:
         cmd = "glitch_prep_uart"
-    flags = argd["queue"][0] | (argd["no_driver"][0] << 1) | (argd["no_trigger"][0] << 2)
-    argv = [argd["offset"][0], argd["offset_mult"][0], argd["width"][0], flags, argd["trigger"][0], argd["trigger_state"][0], argd["driver"][0]]
+    flags = argd["queue"] | (argd["no_driver"] << 1) | (argd["no_trigger"] << 2)
+    argv = [argd["offset"], argd["offset_mult"], argd["width"], flags, argd["trigger"], argd["trigger_state"], argd["driver"]]
     #print(argv)
     send_rpc_cmd(cmd, argv)
 
 def glitch_add_direct(argd):
     #print(argd)
     cmd = "glitch_prep_custom"
-    if argd["queue"][0] == 1:
+    if argd["queue"] == 1:
         cmd = "glitch_prep_custom_chain"
     #TODO: maybe handle it in a nice dictionary/array where idx = bit shift?
-    trigger_ctl = argd["trigger"][0] | (argd["no_trigger"][0] << 6) | (int(argd["uart_mode"][0] == True) << 8) | (argd["trigger_state"][0] << 16)
-    if argd["trigger_reconfigure"][0] == True:
-        trigger_ctl = trigger_ctl | (1 << 7) | (argd["trigger_pke"][0] << 9) | (argd["trigger_pue"][0] << 10) | (argd["trigger_pus"][0] << 11) | (argd["trigger_hys"][0] << 13)
-    driver_ctl = argd["driver"][0] | (argd["no_driver"][0] << 6)
-    if argd["driver_reconfigure"][0] == True:
-        driver_ctl = driver_ctl | (1 << 7) | (argd["driver_ode"][0] << 8) | (argd["driver_dse"][0] << 9)
-    argv = [argd["width"][0], argd["offset"][0], argd["offset_mult"][0], trigger_ctl, driver_ctl, argd["clockspeed"][0], argd["driver_mask"][0], argd["driver_set_drive"][0], argd["driver_set_stop"][0], argd["trigger_mask"][0], argd["trigger_exp"][0], argd["trigger_get"][0]]
+    trigger_ctl = argd["trigger"] | (argd["no_trigger"] << 6) | (argd["uart_mode"] << 8) | (argd["trigger_state"] << 16)
+    if argd["trigger_reconfigure"] == 1:
+        trigger_ctl = trigger_ctl | (1 << 7) | (argd["trigger_pke"] << 9) | (argd["trigger_pue"] << 10) | (argd["trigger_pus"] << 11) | (argd["trigger_hys"] << 13)
+    driver_ctl = argd["driver"] | (argd["no_driver"] << 6)
+    if argd["driver_reconfigure"] == 1:
+        driver_ctl = driver_ctl | (1 << 7) | (argd["driver_ode"] << 8) | (argd["driver_dse"] << 9)
+    argv = [argd["width"], argd["offset"], argd["offset_mult"], trigger_ctl, driver_ctl, argd["clockspeed"], argd["driver_mask"], argd["driver_set_drive"], argd["driver_set_stop"], argd["trigger_mask"], argd["trigger_exp"], argd["trigger_get"]]
     #print(argv)
     send_rpc_cmd(cmd, argv)
 
@@ -152,14 +152,14 @@ def handle_cmd(cmd, argv):
         case "manual":
             return uart.write(DEFAULT_UART_TRIGGER_EXP_BYTE)
         case "glitch_add":
-            arg_dict = DEFAULT_ARG_DICT.copy()
+            arg_dict = {param: value[0] for param, value in DEFAULT_ARG_DICT.copy().items()}
             for arg in argv:
                 key, val = arg.split('=')
                 if val.startswith('0x'):
-                    arg_dict[key][0] = int(val, 16)
+                    arg_dict[key] = int(val, 16)
                 else:
-                    arg_dict[key][0] = int(val)
-            if arg_dict["override"][0] == True:
+                    arg_dict[key] = int(val)
+            if arg_dict["override"] == 1:
                 return glitch_add_direct(arg_dict)
             else:
                 return glitch_add(arg_dict)
