@@ -31,41 +31,41 @@
 .global s_glitch
 .thumb_func
 s_glitch:
-    push {r1-r12, lr}
+    push.w {r1-r12, lr}
     # preload vars & args
 1:
-    ldmia r0!, {r3-r12}
+    ldmia.w r0!, {r3-r12}
 
     # ready, wait for trigger
 2:
-    ldr r1,[r11]
-    and r1,r1,r10
-    cmp r1,r9
-    bne 2b
+    ldr.w r1,[r11]
+    and.w r1,r1,r10
+    cmp.w r1,r9
+    bne.w 2b
 
     # wait [offset] * [offset_mult]
 3:
-    mov r2, r3
+    mov.w r2, r3
 4:
-    subs r2, #0x1
-    bne 4b
-    subs r4, #0x1
-    bne 3b
+    subs.w r2, #0x1
+    bne.w 4b
+    subs.w r4, #0x1
+    bne.w 3b
 
     # drive
-    str r6,[r7]
+    str.w r6,[r7]
 
     # wait [width]
 5:
-    subs r5, #0x1
-    bne 5b
+    subs.w r5, #0x1
+    bne.w 5b
 
     # stop
-    str r6,[r8]
+    str.w r6,[r8]
 
     # execute next if/in chain
-    movs r0, r12
-    bne 1b
+    movs.w r0, r12
+    bne.w 1b
 
     # bye
-    pop {r1-r12, pc}
+    pop.w {r1-r12, pc}

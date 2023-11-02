@@ -27,7 +27,7 @@ fw40.hex: fw40.elf
 	$(OBJCOPY) -O ihex $^ $@
 
 fw40.elf: $(OBJS)
-	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS) -Xlinker --defsym TARGET_TEENSY41=0
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS) -Xlinker --defsym=TARGET_TEENSY41=0
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -46,7 +46,7 @@ fw41.hex: fw41.elf
 	$(OBJCOPY) -O ihex $^ $@
 
 fw41.elf: $(OBJS41)
-	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS) -Xlinker --defsym TARGET_TEENSY41=1
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS) -Xlinker --defsym=TARGET_TEENSY41=1
 
 %.o41: %.c
 	$(CC) $(CFLAGS) -DTARGET_TEENSY41 -c $< -o $@

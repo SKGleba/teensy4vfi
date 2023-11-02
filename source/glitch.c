@@ -17,7 +17,8 @@ int glitch_configure(glitch_config_s* config, bool add_to_chain) {
     
     bool use_driver = !(config->driver_ctl & BITN(GLITCH_PAD_CTL_BITS_IGNORE));
     int driver_pad = (config->driver_ctl & GLITCH_PAD_CTL_BITMASK_TEENSY_PAD);
-    
+    bool ode_mode = !!(config->driver_ctl & BITN(GLITCH_OUTPUT_PAD_CTL_BITS_ODE));
+
     bool use_trigger = !(config->trigger_ctl & BITN(GLITCH_PAD_CTL_BITS_IGNORE));
     int trigger_pad = (config->trigger_ctl & GLITCH_PAD_CTL_BITMASK_TEENSY_PAD);
     if (config->trigger_ctl & BITN(GLITCH_INPUT_PAD_CTL_BITS_UART_MODE)) {
@@ -47,12 +48,12 @@ int glitch_configure(glitch_config_s* config, bool add_to_chain) {
     memset(varray, 0, sizeof(glitch_varray_s));
 
     // configure mosfet driver
-    if (use_driver && (config->driver_ctl & GLITCH_PAD_CTL_BITS_RECONFIGURE)) {
+    if (use_driver && (config->driver_ctl & BITN(GLITCH_PAD_CTL_BITS_RECONFIGURE))) {
         int driver_pad_ctl = IOMUXC_PORT_CTL_FIELD(
             true,                                                                                                   // fast slew rate
             IOMUXC_PORT_CTL_DSE_R0(((config->driver_ctl >> GLITCH_OUTPUT_PAD_CTL_BITS_DSE) & IOMUXC_PORT_CTL_BITMASK_DSE)),// drive strength
             IOMUXC_PORT_CTL_SPEED(4),                                                                               // 200Mhz
-            false,                                                                                                  // TODO: support OD as actual glitcher?
+            ode_mode,                                                                                               // open drain mode
             false,                                                                                                  // n/a
             false,                                                                                                  // n/a
             false,                                                                                                  // n/a
@@ -61,10 +62,12 @@ int glitch_configure(glitch_config_s* config, bool add_to_chain) {
         teensy_set_pad_ctl(driver_pad, driver_pad_ctl, TEENSY_PAD_MODE_GPIO, true);                                 // pad config
         teensy_pad_logic_ctrl_tightness(driver_pad, true, true);                                                    // change to tight-coupled gpio ctl
         teensy_pad_logic_mode(driver_pad, true, true);                                                              // set as output
+        if (ode_mode)
+            teensy_pad_logic_set(driver_pad, true);                                                                 // set driver to floating
     }
-    
+
     // configure glitch trigger
-    if (use_trigger && (config->trigger_ctl & GLITCH_PAD_CTL_BITS_RECONFIGURE)) {
+    if (use_trigger && (config->trigger_ctl & BITN(GLITCH_PAD_CTL_BITS_RECONFIGURE))) {
         int trigger_pad_ctl = IOMUXC_PORT_CTL_FIELD(
             true,                                                                                                   // fast slew rate
             false,                                                                                                  // n/a
@@ -95,16 +98,22 @@ int glitch_configure(glitch_config_s* config, bool add_to_chain) {
     
     if (config->overrides.driver.set_to_drive)                                                                      // write a bitfield preset here to open the mosfet gate
         varray->driver_set_reg = config->overrides.driver.set_to_drive;
-    else if (use_driver)
-        varray->driver_set_reg = &(gpio_get_bus_paddr(teensy_get_pad_gpio_bus(driver_pad))->dr_set);
-    else
+    else if (use_driver) {
+        if (ode_mode)
+            varray->driver_set_reg = &(gpio_get_bus_paddr(teensy_get_pad_gpio_bus(driver_pad))->dr_clear);
+        else
+            varray->driver_set_reg = &(gpio_get_bus_paddr(teensy_get_pad_gpio_bus(driver_pad))->dr_set);
+    } else
         varray->driver_set_reg = &varray->driver_ports;
 
     if (config->overrides.driver.set_to_stop)                                                                       // write a bitfield preset here to close the mosfet gate
         varray->driver_clr_reg = config->overrides.driver.set_to_stop;
-    else if (use_driver)
-        varray->driver_clr_reg = &(gpio_get_bus_paddr(teensy_get_pad_gpio_bus(driver_pad))->dr_clear);
-    else
+    else if (use_driver) {
+        if (ode_mode)
+            varray->driver_clr_reg = &(gpio_get_bus_paddr(teensy_get_pad_gpio_bus(driver_pad))->dr_set);
+        else
+            varray->driver_clr_reg = &(gpio_get_bus_paddr(teensy_get_pad_gpio_bus(driver_pad))->dr_clear);
+    } else
         varray->driver_clr_reg = &varray->driver_ports;
 
     if (config->overrides.trigger.mask) {                                                                           // mask and expected masked value from trigger_data_reg

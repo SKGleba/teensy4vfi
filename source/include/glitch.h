@@ -72,7 +72,7 @@ enum GLITCH_INPUT_PAD_CTL_BITS {
 #define GLITCH_INPUT_PAD_CTL_BITMASK_TEENSY_UART_WATERMARK 0xff
 enum GLITCH_OUTPUT_PAD_CTL_BITS {
     GLITCH_OUTPUT_PAD_CTL_BITS_ODE = 8, // open-drain mode (TODO: support)
-    GLITCH_OUTPUT_PAD_CTL_BITS_DSE, // drive strength
+    GLITCH_OUTPUT_PAD_CTL_BITS_DSE // drive strength
 };
 
 struct _glitch_config_s {
