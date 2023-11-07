@@ -71,7 +71,7 @@ enum GLITCH_INPUT_PAD_CTL_BITS {
 #define GLITCH_INPUT_PAD_CTL_BITMASK_TEENSY_UARTN GLITCH_PAD_CTL_BITMASK_TEENSY_PAD
 #define GLITCH_INPUT_PAD_CTL_BITMASK_TEENSY_UART_WATERMARK 0xff
 enum GLITCH_OUTPUT_PAD_CTL_BITS {
-    GLITCH_OUTPUT_PAD_CTL_BITS_ODE = 8, // open-drain mode (TODO: support)
+    GLITCH_OUTPUT_PAD_CTL_BITS_ODE = 8, // open-drain mode
     GLITCH_OUTPUT_PAD_CTL_BITS_DSE // drive strength
 };
 
@@ -114,12 +114,12 @@ typedef struct _glitch_varray_s glitch_varray_s;
 extern glitch_varray_s* g_glitch_varray;
 extern glitch_varray_s g_static_glitch_varray[GLITCH_STATIC_CHAIN_N];
 extern int g_glitch_max_chain_n;
-
-// TODO: glitch_intr() with intrs 
+extern int g_glitch_clkf;
 
 extern void (*glitch_arm)(glitch_varray_s *varray);
 void s_glitch(glitch_varray_s* varray);
 int glitch_configure(glitch_config_s* config, bool add_to_chain);
 int glitch_configure_default(int type, uint32_t offset, uint32_t offset_mult, uint32_t width, int trigger_pad, int trigger_state, int driver_pad);
+void glitch_w_freq_cg(glitch_varray_s* varray);
 
 #endif

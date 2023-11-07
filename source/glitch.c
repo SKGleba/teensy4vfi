@@ -2,6 +2,7 @@
 #include "include/clib.h"
 #include "include/teensy.h"
 #include "include/gpio.h"
+#include "include/ccm.h"
 
 #include "include/glitch.h"
 
@@ -9,7 +10,17 @@ int g_glitch_max_chain_n = GLITCH_STATIC_CHAIN_N;
 glitch_varray_s* g_glitch_varray = g_static_glitch_varray;
 glitch_varray_s g_static_glitch_varray[GLITCH_STATIC_CHAIN_N];
 
-void (*glitch_arm)(glitch_varray_s* varray) = (void*)GLITCH_DEFAULT_FUNC;
+int g_glitch_clkf = CCM_ARM_CLKF_600MHZ;
+
+void (*glitch_arm)(glitch_varray_s* varray) = (void*)GLITCH_DEFAULT_FUNC; // for RPC and external stuff
+
+void (*glitch_w_freq_cg_arm)(glitch_varray_s* varray) = (void*)GLITCH_DEFAULT_FUNC; // for local wrappers
+void glitch_w_freq_cg(glitch_varray_s* varray) {
+    int prev_clkf = ccm_get_core_clkf();
+    ccm_set_core_clkf(g_glitch_clkf, 0);
+    glitch_w_freq_cg_arm(varray);
+    ccm_set_core_clkf(prev_clkf, 0);
+}
 
 // uart mode does NOT configure the uart receiver, only the pad
 int glitch_configure(glitch_config_s* config, bool add_to_chain) {
@@ -28,12 +39,14 @@ int glitch_configure(glitch_config_s* config, bool add_to_chain) {
         uart_mode = true;
     }
 
+    
     // check args
     if (driver_pad > (TEENSY_PADS_COUNT - 1) || trigger_pad > (TEENSY_PADS_COUNT - 1))
         return -2;
     if (!config->offset || !config->offset_mult || !config->width)
         return -3;
 
+    
     // add to chain if requested
     glitch_varray_s* varray = g_glitch_varray;
     if (add_to_chain) {
@@ -47,6 +60,7 @@ int glitch_configure(glitch_config_s* config, bool add_to_chain) {
     }
     memset(varray, 0, sizeof(glitch_varray_s));
 
+    
     // configure mosfet driver
     if (use_driver && (config->driver_ctl & BITN(GLITCH_PAD_CTL_BITS_RECONFIGURE))) {
         int driver_pad_ctl = IOMUXC_PORT_CTL_FIELD(
@@ -66,6 +80,7 @@ int glitch_configure(glitch_config_s* config, bool add_to_chain) {
             teensy_pad_logic_set(driver_pad, true);                                                                 // set driver to floating
     }
 
+    
     // configure glitch trigger
     if (use_trigger && (config->trigger_ctl & BITN(GLITCH_PAD_CTL_BITS_RECONFIGURE))) {
         int trigger_pad_ctl = IOMUXC_PORT_CTL_FIELD(
@@ -85,6 +100,7 @@ int glitch_configure(glitch_config_s* config, bool add_to_chain) {
         } else
             teensy_set_pad_ctl(trigger_pad, trigger_pad_ctl, -1, true);
     }
+
     
     // configure glitch params
     varray->offset = config->offset;                                                                                // wait period between trigger-drive
@@ -140,14 +156,21 @@ int glitch_configure(glitch_config_s* config, bool add_to_chain) {
             varray->trigger_data_reg = &varray->trigger_ports;
     }
 
-    // set clocks
     if (config->overrides.clockspeed)                                                                               // teensy core clock freq
-        ccm_set_core_clkf(0, config->overrides.clockspeed);
+        g_glitch_clkf = ccm_calculate_core_clkf(config->overrides.clockspeed);
     else
-        ccm_set_core_clkf(0, GLITCH_DEFAULT_CLKSPEED);
+        g_glitch_clkf = ccm_calculate_core_clkf(GLITCH_DEFAULT_CLKSPEED);
 
-    // set the glitch func
+    
+    // set the main glitch func
     glitch_arm = s_glitch;                                                                                          // s_glitch (logic level trigger,waitloop)
+
+    
+    // add various glitch func wrappers (chain them, we got plenty of stack to spare)
+    if (g_glitch_clkf != ccm_get_core_clkf()) {                                                                     // requested special core clocks for glitching
+        glitch_w_freq_cg_arm = glitch_arm;
+        glitch_arm = glitch_w_freq_cg;
+    }
 
     return 0;
 }

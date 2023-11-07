@@ -13,12 +13,7 @@ Some code might make no sense and/or be overcomplicated, suggestions and non-C++
 ### Optional
  - Exceptions & Interrupts
  - Interrupt-based trigger (optional due to high jitter)
- - Interrupt->DMA-based UART RX handling
  - More RPC commands
-
-### Known BUGs
- - PC RPC script skipping, cutting return codes
-   - timing issues, very low priority 
 
 ## compiling & flashing
 This project does not have any external requirements, it can be compiled with the [Arm GNU Toolchain](https://developer.arm.com/Tools%20and%20Software/GNU%20Toolchain).<br>

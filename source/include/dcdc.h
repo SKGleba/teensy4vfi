@@ -40,5 +40,6 @@ enum DCDC_REG0_BITS {
 };
 
 int dcdc_ctrl_vdd_soc(int mv, bool step, bool wait, bool onlyUp);
+#define dcdc_get_vdd_soc() (DCDC_TRG_TO_VDD_SOC((dcdc.reg_3 >> DCDC_REG3_BITS_TRG) & DCDC_REG3_BITMASK_TRG))
 
 #endif

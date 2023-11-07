@@ -34,7 +34,7 @@ void ccm_control_gate(int device, int activity_mode, bool wait) {
         Fpll: PLL_ARM output freq, range 650-1300 Mhz
         Fref: 24Mhz osci by default <= we set it to that anyways here
 
-    Farm = Fpll / arm_podf / ahb_podf, range up to 600Mhz without oc
+    Farm = Fpll / arm_podf / ahb_podf, range up to 600Mhz without oc, 984Mhz with oc
         Farm: ARM clock freq
 
     Fahb = Farm, TC^
@@ -52,7 +52,7 @@ int ccm_calculate_core_clkf(int desired_freq) {
     int final_Farm = 0;
     int ipg_podf = 0;
 
-    if (desired_freq < CCM_MIN_ARM_FREQ || desired_freq > CCM_MAX_ARM_FREQ)
+    if (desired_freq < CCM_MIN_ARM_FREQ || desired_freq > CCM_MELT_ARM_FREQ)
         return -1;
 
     int min_diff = 0x7fffffff;
@@ -89,7 +89,7 @@ int ccm_calculate_core_clkf(int desired_freq) {
         | BITNVAL(CCM_CORE_CLKF_BITS_AHB_PODF, final_ahb_podf)
         | BITNVAL(CCM_CORE_CLKF_BITS_IPG_PODF, ipg_podf);
 
-    printf("calculate_core_cklf: %x\n desired: %x\n got: %x\n div_select: %x\n arm_podf: %x\n ahb_podf: %x\n ipg_podf: %x\n",
+    printf("calculate_core_cklf: %x\n desired f: %x\n got f: %x\n div_select: %x\n arm_podf: %x\n ahb_podf: %x\n ipg_podf: %x\n",
         clkf,
         desired_freq,
         final_Farm,
@@ -102,7 +102,6 @@ int ccm_calculate_core_clkf(int desired_freq) {
     return clkf;
 }
 
-// TODO: overclock? apparently it can be stable at 1GHz with ext cooling, need to test AHB too
 int ccm_set_core_clkf(int core_clkf, int desired_freq) {
     // we can slowly calc args here
     if (!core_clkf && desired_freq) {
@@ -122,16 +121,24 @@ int ccm_set_core_clkf(int core_clkf, int desired_freq) {
     // validate
     int Farm = ((CCM_PLL_ARM_REF_OSC_FREQ * (div_select >> 1)) / arm_podf) / ahb_podf;
     printf("ccm_set_core_clkf: %X [ %X | %X | %X | %X ]\n", Farm, div_select, arm_podf, ahb_podf, ipg_podf);
-    if (Farm < CCM_MIN_ARM_FREQ || Farm > CCM_MAX_ARM_FREQ)
+    if (Farm < CCM_MIN_ARM_FREQ || ((Farm > CCM_MAX_OC_ARM_FREQ) && (Farm != CCM_MELT_ARM_FREQ)))
         return -3;
 
-    // min soc voltage for overdrive: 1.25v
-    if (Farm > CCM_1150MV_MIN_FREQ) {
-        if (Farm > CCM_1250MV_MIN_FREQ)
-            dcdc_ctrl_vdd_soc(1250, true, true, true);
-        else
-            dcdc_ctrl_vdd_soc(1150, true, true, true);
-    }
+    // min soc voltage for overdrive: 1.25v, OC: 1.4v, melt: 1.6v
+    int new_voltage = dcdc_get_vdd_soc();
+    if (Farm > CCM_1150MV_MAX_ARM_FREQ) {
+        if (Farm > CCM_1250MV_MAX_ARM_FREQ) {
+            if (Farm > CCM_1400MV_MAX_ARM_FREQ)
+                new_voltage = 1575; // RIP
+            else
+                new_voltage = 1400;
+        } else
+            new_voltage = 1250;
+    } else
+        new_voltage = 1150;
+
+    // increase voltage if needed
+    dcdc_ctrl_vdd_soc(new_voltage, true, true, true);
 
     // put arm clock on bypass while we change params
     anatop.pll_arm.clr = BITNVAL(ANATOP_PLL_ARM_BITS_BYPASS_CLK_SRC, ANATOP_PLL_ARM_BITMASK_BYPASS_CLK_SRC); // 24mhz osci | ALSO CHANGES REFCLK
@@ -157,6 +164,10 @@ int ccm_set_core_clkf(int core_clkf, int desired_freq) {
     anatop.pll_arm.clr = BITN(ANATOP_PLL_ARM_BITS_BYPASS);
     while (!(anatop.pll_arm.dr & BITN(ANATOP_PLL_ARM_BITS_LOCK))) {};
 
+    // drop voltage if possible
+    if ((new_voltage > 1150) || (CCM_1150MV_MAX_IPG_FREQ >= (Farm / ipg_podf)))
+        dcdc_ctrl_vdd_soc(new_voltage, true, true, false);
+    
     return core_clkf;
 }
 

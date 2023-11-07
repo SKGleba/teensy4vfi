@@ -1,6 +1,7 @@
 #ifndef __CCM_H__
 #define __CCM_H__
 
+#include "paddr.h"
 #include "aips.h"
 
 #define ccm ((aips_1_s*)AIPS_1_OFFSET)->ccm
@@ -52,16 +53,24 @@ enum CCM_CDHIPR_BITS {
     CCM_CDHIPR_BITS_ARM_PODF_BUSY = 16
 };
 
+#define CCM_MELT_ARM_FREQ 984000000
+#define CCM_MAX_OC_ARM_FREQ 792000000
 #define CCM_MAX_ARM_FREQ 600000000
+#define CCM_FULL_SPEED_ARM_FREQ 528000000
 #define CCM_MIN_ARM_FREQ 24000000
 #define CCM_MAX_PLL_ARM_FREQ 1300000000
 #define CCM_MIN_PLL_ARM_FREQ 650000000
 #define CCM_PLL_ARM_REF_OSC_FREQ 24000000 // yh
 #define CCM_MAX_IPG_FREQ 150000000
+#define CCM_FULL_SPEED_IPG_FREQ 132000000
 
-#define CCM_1150MV_MIN_FREQ CCM_MIN_ARM_FREQ
-#define CCM_1250MV_MIN_FREQ 528000000
+#define CCM_1150MV_MAX_IPG_FREQ CCM_FULL_SPEED_IPG_FREQ
+#define CCM_1150MV_MAX_ARM_FREQ CCM_FULL_SPEED_ARM_FREQ
+#define CCM_1250MV_MAX_ARM_FREQ CCM_MAX_ARM_FREQ
+#define CCM_1400MV_MAX_ARM_FREQ CCM_MAX_OC_ARM_FREQ
 
+#define CCM_ARM_CLKF_984MHZ (82 | (1 << 8) | (1 << 16) | (4 << 24))
+#define CCM_ARM_CLKF_792MHZ (66 | (1 << 8) | (1 << 16) | (4 << 24))
 #define CCM_ARM_CLKF_600MHZ (100 | (2 << 8) | (1 << 16) | (4 << 24))
 #define CCM_ARM_CLKF_528MHZ (88 | (2 << 8) | (1 << 16) | (4 << 24))
 #define CCM_ARM_CLKF_480MHZ (80 | (2 << 8) | (1 << 16) | (4 << 24))
@@ -71,10 +80,12 @@ enum CCM_CDHIPR_BITS {
 #define CCM_ARM_CLKF_100MHZ (100 | (6 << 8) | (2 << 16) | (1 << 24))
 #define CCM_ARM_CLKF_24MHZ (56 | (7 << 8) | (4 << 16) | (1 << 24))
 
-#define CCM_ARM_CLKF_OVERDRIVE CCM_ARM_CLKF_600MHZ
-#define CCM_ARM_CLKF_FULL_SPEED CCM_ARM_CLKF_528MHZ
-#define CCM_ARM_CLKF_DEFAULT CCM_ARM_CLKF_396MHZ
 #define CCM_ARM_CLKF_LP CCM_ARM_CLKF_24MHZ
+#define CCM_ARM_CLKF_DEFAULT CCM_ARM_CLKF_396MHZ
+#define CCM_ARM_CLKF_FULL_SPEED CCM_ARM_CLKF_528MHZ // normal, safe freq
+#define CCM_ARM_CLKF_OVERDRIVE CCM_ARM_CLKF_600MHZ  // reqs higher voltage, shortens lifespan
+#define CCM_ARM_CLKF_OC CCM_ARM_CLKF_792MHZ         // ^ + cooler required
+#define CCM_ARM_CLKF_MELT CCM_ARM_CLKF_984MHZ       // ^ + it will probably melt
 
 enum CCM_CORE_CLKF_BITS {
     CCM_CORE_CLKF_BITS_DIV_SELECT = 0,
@@ -218,5 +229,12 @@ int ccm_set_core_clkf(int core_clkf, int desired_freq);
 int ccm_calculate_core_clkf(int desired_freq);
 void ccm_control_gate(int device, int activity_mode, bool wait);
 void ccm_set_uart_clk(bool sauce_osc_clk_24m, int sauce_div_p2, bool wait);
+#define ccm_get_core_freq() (((CCM_PLL_ARM_REF_OSC_FREQ * ((anatop.pll_arm.dr & ANATOP_PLL_ARM_BITMASK_DIV_SELECT) >> 1)) / (ccm.cacrr + 1)) / (((ccm.cbcdr >> CCM_CBCDR_BITS_AHB_PODF) & CCM_CBCDR_BITMASK_AHB_PODF) + 1))
+#define ccm_get_core_clkf() ( \
+    BITNVAL(CCM_CORE_CLKF_BITS_DIV_SELECT, (anatop.pll_arm.dr & ANATOP_PLL_ARM_BITMASK_DIV_SELECT)) \
+    | BITNVAL(CCM_CORE_CLKF_BITS_ARM_PODF, (((ccm.cacrr >> CCM_CACCR_BITS_ARM_PODF) & CCM_CACCR_BITMASK_ARM_PODF) + 1)) \
+    | BITNVAL(CCM_CORE_CLKF_BITS_AHB_PODF, (((ccm.cbcdr >> CCM_CBCDR_BITS_AHB_PODF) & CCM_CBCDR_BITMASK_AHB_PODF) + 1)) \
+    | BITNVAL(CCM_CORE_CLKF_BITS_IPG_PODF, (((ccm.cbcdr >> CCM_CBCDR_BITS_IPG_PODF) & CCM_CBCDR_BITMASK_IPG_PODF) + 1)) \
+    )
 
 #endif
