@@ -77,7 +77,10 @@ void rpc_loop(void) {
             cret = glitch_configure_default(BITN(GLITCH_CONFIG_DEFAULT_TYPE_BITS_UART) | (data[3] << GLITCH_CONFIG_DEFAULT_TYPE_BITS_FLAG_CHAIN), data[0], data[1], data[2], data[4], data[5], data[6]);
             break;
         case RPC_CMD_SET_CLK:
-            cret = ccm_set_core_clkf(data[1], data[0]);
+            if (data[2])
+                cret = g_glitch_clkf = data[1] ?: ccm_calculate_core_clkf(data[0]);
+            else
+                cret = ccm_set_core_clkf(data[1], data[0]);
             break;
         case RPC_CMD_GLITCH_PREP_CUSTOM_CHAIN:
             cret = glitch_configure((glitch_config_s*)data, true);
@@ -122,7 +125,7 @@ void rpc_loop(void) {
         case RPC_CMD_GLITCH_SET_CHAIN_MAX: // arg0: new max chain element count, arg1: use """"heap""""?, arg2: memset0 the varray?
             if (data[1]) {
                 g_glitch_varray = (glitch_varray_s *)&cfg_prog_bss_end;
-                g_glitch_max_chain_n = data[0] ? data[0] : GLITCH_STATIC_CHAIN_N;
+                g_glitch_max_chain_n = data[0] ?: GLITCH_STATIC_CHAIN_N;
             } else {
                 g_glitch_varray = g_static_glitch_varray;
                 g_glitch_max_chain_n = (data[0] && (data[0] <= GLITCH_STATIC_CHAIN_N)) ? data[0] : GLITCH_STATIC_CHAIN_N;

@@ -114,7 +114,7 @@ int ccm_set_core_clkf(int core_clkf, int desired_freq) {
     int div_select = (core_clkf >> CCM_CORE_CLKF_BITS_DIV_SELECT) & ANATOP_PLL_ARM_BITMASK_DIV_SELECT;
     int arm_podf = (core_clkf >> CCM_CORE_CLKF_BITS_ARM_PODF) & ((CCM_CACCR_BITMASK_ARM_PODF << 1) | 1);
     int ahb_podf = (core_clkf >> CCM_CORE_CLKF_BITS_AHB_PODF) & ((CCM_CBCDR_BITMASK_AHB_PODF << 1) | 1);
-    int ipg_podf = (core_clkf >> CCM_CBCDR_BITS_IPG_PODF) & ((CCM_CBCDR_BITMASK_IPG_PODF << 1) | 1);
+    int ipg_podf = (core_clkf >> CCM_CORE_CLKF_BITS_IPG_PODF) & ((CCM_CBCDR_BITMASK_IPG_PODF << 1) | 1);
     if (!(div_select && arm_podf && ahb_podf && ipg_podf))
         return -2;
 

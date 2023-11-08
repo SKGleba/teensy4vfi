@@ -10,11 +10,10 @@ int g_glitch_max_chain_n = GLITCH_STATIC_CHAIN_N;
 glitch_varray_s* g_glitch_varray = g_static_glitch_varray;
 glitch_varray_s g_static_glitch_varray[GLITCH_STATIC_CHAIN_N];
 
+void (*glitch_arm)(glitch_varray_s* varray) = (void*)GLITCH_DEFAULT_FUNC; // first glitch arm func in chain, for ext callers
+
 int g_glitch_clkf = CCM_ARM_CLKF_600MHZ;
-
-void (*glitch_arm)(glitch_varray_s* varray) = (void*)GLITCH_DEFAULT_FUNC; // for RPC and external stuff
-
-void (*glitch_w_freq_cg_arm)(glitch_varray_s* varray) = (void*)GLITCH_DEFAULT_FUNC; // for local wrappers
+void (*glitch_w_freq_cg_arm)(glitch_varray_s* varray) = (void*)GLITCH_DEFAULT_FUNC; // next step in chain for this wrapper
 void glitch_w_freq_cg(glitch_varray_s* varray) {
     int prev_clkf = ccm_get_core_clkf();
     ccm_set_core_clkf(g_glitch_clkf, 0);
@@ -49,6 +48,7 @@ int glitch_configure(glitch_config_s* config, bool add_to_chain) {
     
     // add to chain if requested
     glitch_varray_s* varray = g_glitch_varray;
+    add_to_chain = !!add_to_chain;
     if (add_to_chain) {
         while (varray->next) {
             varray = varray->next;
