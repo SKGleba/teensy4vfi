@@ -21,7 +21,7 @@ RPC_COMMANDS = {                        # supported RPC commands & short descrip
     "glitch_prep_ll" : [0x9, "prepare a default logic level -triggered glitch", "<offset> <offset_mult> <width> <add to chain?> <trigger pad> <trigger state> <driver pad>"],
     "glitch_arm" : [0xa, "execute the glitch chain", "<fake rpc reply to free the client?>"],
     "glitch_prep_custom" : [0xb, "prepare a custom glitch", "[glitch_config]"],
-    "glitch_prep_uart" : [0xc, "prepare a default uart -triggered glitch", "<offset> <offset_mult> <width> <add to chain?> <trigger pad> <trigger char> <driver pad>"],
+    "glitch_prep_uart" : [0xc, "prepare a default uart -triggered glitch", "<offset> <offset_mult> <width> <add to chain?> <trigger uartn> <trigger char> <driver pad>"],
     "set_clk" : [0xd, "set core freq", "[freq] <clkf>"],
     "glitch_prep_custom_chain" : [0xe, "prepare a custom glitch (add to chain)", "[glitch_config]"],
     "glitch_prep_none" : [0xf, "prepare a default glitch (no trigger)", "<offset> <offset_mult> <width> <add to chain?> <driver pad>"],

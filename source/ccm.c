@@ -89,6 +89,7 @@ int ccm_calculate_core_clkf(int desired_freq) {
         | BITNVAL(CCM_CORE_CLKF_BITS_AHB_PODF, final_ahb_podf)
         | BITNVAL(CCM_CORE_CLKF_BITS_IPG_PODF, ipg_podf);
 
+    /*
     printf("calculate_core_cklf: %x\n desired f: %x\n got f: %x\n div_select: %x\n arm_podf: %x\n ahb_podf: %x\n ipg_podf: %x\n",
         clkf,
         desired_freq,
@@ -97,7 +98,7 @@ int ccm_calculate_core_clkf(int desired_freq) {
         final_arm_podf,
         final_ahb_podf,
         ipg_podf
-    );
+    );*/
 
     return clkf;
 }
