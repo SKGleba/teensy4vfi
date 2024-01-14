@@ -8,8 +8,8 @@ The measuring equipment is a [Hantek 6254BD](https://www.hantek.eu/product/hante
 ## Single pin measurements
 These tests were performed on a single pin, their focus is measuring speed and consistency.<br>
 The Teensy 4.1 board is powered from the microUSB port, and has a uart<->USB adapter connected to pads 0, 1, gnd.
-### Test 1: max queue speed (with trigger)
-This test is a simple measurement of the lowest possible offset and width and queue switching speed.
+### Test 1: queue speed (with trigger)
+This test is a simple measurement of the lowest possible offset, width and queue switching speed.
 #### Parameters
 Command: ```glitch_add driver=15 trigger=9 trigger_state=0 offset=1 width=1 override=1 clockspeed=800000000```
  - queue: single glitch, glitch->next = glitch (loop)
