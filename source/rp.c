@@ -138,6 +138,11 @@ void rpc_loop(void) {
             cret = 0;
             asm volatile ("mov %0, sp\n\t" : "=r" (cret));
             break;
+        case RPC_CMD_GLITCH_LOOP:
+            if (data[0])
+                printf(RPC_WATERMARK "LOOPIN\n", cret);
+            cret = glitch_loop_chain(g_glitch_varray);
+            break;
         default:
             break;
         }

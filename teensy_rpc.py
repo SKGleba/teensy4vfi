@@ -3,7 +3,7 @@
 import sys, struct
 import serial
 
-DEFAULT_PORT = 'COM18'                  # teensy
+DEFAULT_PORT = 'COM3'                   # teensy
 DEFAULT_BAUD = 115200                   # default teensy debug uart baud
 
 RPC_MAGIC = b'@'                        # byte indicating we are talking to teensy
@@ -21,7 +21,7 @@ RPC_COMMANDS = {                        # supported RPC commands & short descrip
     "glitch_prep_ll" : [0x9, "prepare a default logic level -triggered glitch", "<offset> <offset_mult> <width> <add to chain?> <trigger pad> <trigger state> <driver pad>"],
     "glitch_arm" : [0xa, "execute the glitch chain", "<fake rpc reply to free the client?>"],
     "glitch_prep_custom" : [0xb, "prepare a custom glitch", "[glitch_config]"],
-    "glitch_prep_uart" : [0xc, "prepare a default uart -triggered glitch", "<offset> <offset_mult> <width> <add to chain?> <trigger uartn> <trigger char> <driver pad>"],
+    "glitch_prep_uart" : [0xc, "prepare a default uart -triggered glitch", "<offset> <offset_mult> <width> <add to chain?> <trigger pad> <trigger char> <driver pad>"],
     "set_clk" : [0xd, "set core freq", "[freq] <clkf>"],
     "glitch_prep_custom_chain" : [0xe, "prepare a custom glitch (add to chain)", "[glitch_config]"],
     "glitch_prep_none" : [0xf, "prepare a default glitch (no trigger)", "<offset> <offset_mult> <width> <add to chain?> <driver pad>"],
@@ -30,7 +30,8 @@ RPC_COMMANDS = {                        # supported RPC commands & short descrip
     "pad_configure" : [0x12, "set pad_ctl and mux_ctl for a teensy pad" "[pad] [pad_ctl] [mux_ctl]"], #TODO: wrap
     "pad_ctrl_logic" : [0x13, "control pad state (logic level mode)", "[func] [pad] <wait?>"], #TODO: wrap
     "glitch_set_chain_max" : [0x14, "set glitch varray/chain location and max elements", "<max glitches> <in heap?>"],
-    "get_sp" : [0x15, "get the current stack pointer", ""]
+    "get_sp" : [0x15, "get the current stack pointer", ""],
+    "glitch_arm_loop" : [0x16, "execute the glitch chain in an infinite loop", ""]
 }
 
 DEFAULT_DRIVER_PAD = 22                 # aka mosfet pad for VFI

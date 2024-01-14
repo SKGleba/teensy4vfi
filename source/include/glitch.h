@@ -121,5 +121,6 @@ void s_glitch(glitch_varray_s* varray);
 int glitch_configure(glitch_config_s* config, bool add_to_chain);
 int glitch_configure_default(int type, uint32_t offset, uint32_t offset_mult, uint32_t width, int trigger_pad, int trigger_state, int driver_pad);
 void glitch_w_freq_cg(glitch_varray_s* varray);
+int glitch_loop_chain(glitch_varray_s* varray);
 
 #endif

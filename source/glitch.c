@@ -247,3 +247,18 @@ int glitch_configure_default(int type, uint32_t offset, uint32_t offset_mult, ui
 
     return ret;
 }
+
+// used to test functionality
+int glitch_loop_chain(glitch_varray_s* varray) {
+    if (!varray)
+        return -1;
+
+    glitch_varray_s* next_v = varray;
+    while (next_v->next)
+        next_v = next_v->next;
+    next_v->next = varray;
+
+    glitch_arm(varray);
+
+    return 0; // should never return anyways
+}
