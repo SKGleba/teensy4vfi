@@ -81,7 +81,7 @@ Avg/Long captures, scope trigger at 2.7v:
 ### Test 3a: offset
 This test measures the consistency and curve of a glitch offset.
 #### Parameters
-Command (with trigger): ```glitch_add driver=15 trigger=9 trigger_state=0 override=1 clockspeed=792000000 width=10 offset=X```
+Command (with trigger): ```glitch_add driver=15 trigger=9 trigger_state=0 override=1 clockspeed=792000000 width=10 offset=X``` <br>
 Command (without trigger): ```glitch_add driver=15 no_trigger=1 override=1 clockspeed=792000000 width=10 offset=X```
  - queue: single glitch, glitch->next = glitch (loop)
  - driver: pad 15 -> high, header connected to the x10 channel 1 probe 
