@@ -54,7 +54,7 @@ Long:
 ![Test 1b](test1b-0.png)
 
 ### Test 2: width
-This test measures the consistency and curve of pulse width. The trigger is replaced by a DTCM memory read and compare.
+This test measures the length, consistency and curve of pulse width. The trigger is replaced by a DTCM memory read and compare.
 #### Parameters
 Command: ```glitch_add driver=15 no_trigger=1 offset=1 override=1 clockspeed=792000000 width=X```
  - queue: single glitch, glitch->next = glitch (loop)
@@ -80,6 +80,8 @@ Avg/Long captures, scope trigger at 2.7v:
 
 ### Test 3a: offset
 This test measures the consistency and curve of a glitch offset.
+ - NOTE: The offset width here is a measure of time between the end of one pulse and start of the next one in the glitch chain.
+   - so it includes end of one glitch entry, load of the next, branch, trigger check, offset
 #### Parameters
 Command (with trigger): ```glitch_add driver=15 trigger=9 trigger_state=0 override=1 clockspeed=792000000 width=10 offset=X``` <br>
 Command (without trigger): ```glitch_add driver=15 no_trigger=1 override=1 clockspeed=792000000 width=10 offset=X```
@@ -101,3 +103,71 @@ Avg/Long captures, scope trigger at 2.7v:
 | 80 | 227 | 221 |
 | 100 | 278 | 272 |
 | 200 | 530 | 524 |
+
+### Test 3b: offset mult
+This test measures the consistency and curve of a glitch offset multiplier.
+ - NOTE: The offset width here is a measure of time between the end of one pulse and start of the next one in the glitch chain.
+   - so it includes end of one glitch entry, load of the next, branch, trigger check, offset
+#### Parameters
+Command: ```glitch_add driver=15 no_trigger=1 override=1 clockspeed=792000000 width=10 offset=X offset_mult=Y```
+ - queue: single glitch, glitch->next = glitch (loop)
+ - driver: pad 15 -> high, header connected to the x10 channel 1 probe 
+ - trigger: n/a (dtcm memory readcmp)
+ - core frequency: 792Mhz
+#### Results
+Avg/Long Width- captures, scope trigger at 2.7v:
+| X\Y | 1 | 2 | 5 | 10 | 20 | 100 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | 16.6 ns | 28.0 ns | 39.4 ns | 58.4 ns | 96.2 ns | 399 ns |
+| 2 | 25.4 ns | 45.6 ns | 88.6 ns | 158 ns | 297 ns | 1410 ns |
+| 5 | 31.8 ns | 59.6 ns | 125 ns | 232 ns | 447 ns | 2160 ns |
+| 10 | 44.4 ns | 84.8 ns | 188 ns | 359 ns | 700 ns | 3425 ns |
+| 20 | 69.6 ns | 135 ns | 314 ns | 611 ns | 1205 ns | 5950 ns |
+| 100 | 272 ns | 539 ns | 1325 ns | 2630 ns | 5245 ns | 26150 ns |
+
+
+## Double pin measurements
+These tests were performed with the oscilloscope connected to both "trigger" and "driver" pins.
+ - Note that the BW/SR becomes 200Mhz/500MSa per channel.
+Trigger is driven by a DDS integrated into the oscilloscope. The wave is set to square, frequency 1khz, amplitude 1.65v and Y offset 1.65v. <br>
+The Teensy 4.1 board is powered from the microUSB port, and has a uart<->USB adapter connected to pads 0, 1, gnd.
+
+### Test 4a: logic high response time
+This test measures the time between trigger high -> driver high.
+ - NOTE: This is highly specific to the test setup and environment, more/less current could lead to more/less consistent results.
+#### Parameters
+Command: ```glitch_add driver=15 trigger=9 trigger_state=1 override=1 clockspeed=792000000 width=10 offset=1 queue=1```
+ - queue: detect low -> detect high -> actual glitch
+ - driver: pad 15 -> high, header connected to the x10 channel 1 probe 
+ - trigger: pad 9 -> high, header connected to DDS and the x10 channel 2 probe
+ - core frequency: 792Mhz
+#### Results
+Single captures, scope trigger at 2.95v:
+|  n0  | H-H | P-P |
+| ---- | --- | --- |
+|   1  | 28.1 ns | 20 ns |
+|   2  | 30 ns | 22 ns |
+|   3  | 32 ns | 22.1 ns |
+|   4  | 32.1 ns | 24 ns |
+|   5  | 30 ns | 20 ns |
+|   6  |  34 ns  | 24 ns |
+
+### Test 4b: logic low response time
+This test measures the time between trigger low -> driver high.
+ - NOTE: This is highly specific to the test setup and environment, more/less current could lead to more/less consistent results.
+#### Parameters
+Command: ```glitch_add driver=15 trigger=9 trigger_state=0 override=1 clockspeed=792000000 width=10 offset=1 queue=1```
+ - queue: detect high -> detect low -> actual glitch
+ - driver: pad 15 -> high, header connected to the x10 channel 1 probe 
+ - trigger: pad 9 -> low, header connected to DDS and the x10 channel 2 probe
+ - core frequency: 792Mhz
+#### Results
+Single captures, scope trigger at 2.95v:
+|  n0  | L-H | P(L)-P | P(H)-P |
+| ---- | --- | --- | --- |
+|   1  | 26.1 ns | 26.1 ns | 38.1 ns |
+|   2  | 32.1 ns | 22.1 ns | 34.1 ns |
+|   3  | 24 ns | 24 ns | 38 ns |
+|   4  | 22 ns | 22 ns | 34.1 ns |
+|   5  | 26 ns | 26 ns | 38.1 ns |
+|   6  | 22 ns | 22.1 ns | 34.1 ns |
