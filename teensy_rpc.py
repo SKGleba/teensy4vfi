@@ -2,9 +2,87 @@
 
 import sys, struct
 import serial
+from enum import Enum
 
-DEFAULT_PORT = 'COM3'                   # teensy
+DEFAULT_PORT = 'COM7'                   # teensy
 DEFAULT_BAUD = 115200                   # default teensy debug uart baud
+RPC_TIMEOOUT = 1                        # rpc command timeout
+MAX_WAIT_RPC = 0                        # max wait timeout count for rpc commands, set to 0 for infinite
+
+DEFAULT_DRIVER_PAD = 22                 # aka mosfet pad for VFI
+DEFAULT_LL_TRIGGER_PAD = 23             # logic-level trigger pad
+DEFAULT_UART_TRIGGER_N = 1              # uart trigger teensy uartn
+DEFAULT_UART_TRIGGER_EXP_BYTE = b'\xD9' # uart trigger byte
+DEFAULT_ARG_DICT = {                    # our glitch_add vars with default preset, translated into glitch_prep_* args
+    "offset" : [1, "how many ~cycles from trigger to glitch"],
+    "offset_mult" : [1, "how many times to repeat the offset loop"],
+    "width" : [1, "how many ~cycles the glitch is held"],
+    "trigger" : [23, "trigger pad or uartn"],
+    "trigger_state" : [1, "trigger logic state or uart byte"],
+    "driver" : [22, "(mosfet) glitch driver pad"],
+    "queue" : [0, "should this glitch be added to the chain?"],
+    "no_trigger" : [0, "skip the glitch trigger"],
+    "no_driver" : [0, "skip the glitch driver"],
+
+    "uart_mode" : [0, "set this glitch to use an uart trigger"],
+
+    "override" : [0, "set this to enable default config overrides (O)"],
+    "clockspeed" : [0, "(O) glitch clockspeed / core frequency"],
+    "driver_mask" : [0, "(O) glitch driver start/stop pattern"],
+    "driver_set_drive" : [0, "(O) glitch driver start register addr"],
+    "driver_set_stop" : [0, "(O) glitch driver stop register addr"],
+    "trigger_mask" : [0, "(O) trigger data pattern mask"], # MUST SET trigger_exp TOO
+    "trigger_exp" : [0, "(O) trigger expected data pattern"],
+    "trigger_get" : [0, "(O) trigger data pattern register addr"],
+
+    "driver_reconfigure" : [0, "(O) set this to reconfigure the driver pad (D)"],
+    "driver_ode" : [0, "(O) (D) enable open-drain mode"],
+    "driver_dse" : [7, "(O) (D) driver impedance divider, from 400ohms, max div 7"],
+
+    "trigger_reconfigure" : [0, "(O) set this to reconfigure the trigger pad (T)"],
+    "trigger_pke" : [0, "(O) (T) enable pull/keep"],
+    "trigger_pue" : [0, "(O) (T) set p/k mode (0|1 - keep|pull)"], # requires pke
+    "trigger_pus" : [0, "(O) (T) set pull type (0|1|2|3 - 100k down|47k up|100k up|22k up)"], # requires pue
+    "trigger_hys" : [0, "(O) (T) enable hysteresis"],
+}
+
+# bitfield enums for glitch_prep args
+class PULL_TYPE(Enum):
+    PULL_DOWN_100K = 0
+    PULL_UP_47K = 1
+    PULL_UP_100K = 2
+    PULL_UP_22K = 3
+
+class CFG_TYPES(Enum):
+    LOGIC_LEVEL = 0
+    UART = 1
+    FLAG_CHAIN = 4
+    FLAG_NODRIVER = 5
+    FLAG_NOTRIGGER = 6
+
+class CFG_XPAD_CTL(Enum):
+    TEENSY_PAD = 0
+    IGNORE = 6
+    RECONFIGURE = 7
+
+class CFG_IPAD_CTL(Enum):
+    TEENSY_UARTN = 0
+    UART_MODE = 8
+    PKE = 9
+    PUE = 10
+    PUS = 11
+    HYS = 13
+    TRIG_STATE = 16
+    TRIG_UART_WM = 16
+
+class CFG_OPAD_CTL(Enum):
+    ODE = 8
+    DSE = 9
+
+class CFG_GLITCH_DFL(Enum):
+    QUEUE = 0
+    NODRIVER = 1
+    NOTRIGGER = 2
 
 RPC_MAGIC = b'@'                        # byte indicating we are talking to teensy
 RPC_WATERMARK = b'!PC_'                 # prefix indicating teensy is replying to us
@@ -34,46 +112,9 @@ RPC_COMMANDS = {                        # supported RPC commands & short descrip
     "glitch_arm_loop" : [0x16, "execute the glitch chain in an infinite loop", ""]
 }
 
-DEFAULT_DRIVER_PAD = 22                 # aka mosfet pad for VFI
-DEFAULT_LL_TRIGGER_PAD = 23             # logic-level trigger pad
-DEFAULT_UART_TRIGGER_N = 1              # uart trigger teensy uartn
-DEFAULT_UART_TRIGGER_EXP_BYTE = b'\xD9' # uart trigger byte
-DEFAULT_ARG_DICT = {                    # our glitch_add vars with default preset, translated into glitch_prep_* args
-    "offset" : [1, "how many ~cycles from trigger to glitch"],
-    "offset_mult" : [1, "how many times to repeat the offset loop"],
-    "width" : [1, "how many ~cycles the glitch is held"],
-    "trigger" : [23, "trigger pad or uartn"],
-    "trigger_state" : [0, "trigger logic state or uart byte"],
-    "driver" : [22, "(mosfet) glitch driver pad"],
-    "queue" : [0, "should this glitch be added to the chain?"],
-    "no_trigger" : [0, "skip the glitch trigger"],
-    "no_driver" : [0, "skip the glitch driver"],
+uart = serial.Serial(DEFAULT_PORT, baudrate=DEFAULT_BAUD, timeout=RPC_TIMEOOUT)
 
-    "uart_mode" : [0, "set this glitch to use an uart trigger"],
-
-    "override" : [0, "set this to enable default config overrides (O)"],
-    "clockspeed" : [0, "(O) glitch clockspeed / core frequency"],
-    "driver_mask" : [0, "(O) glitch driver start/stop pattern"],
-    "driver_set_drive" : [0, "(O) glitch driver start register addr"],
-    "driver_set_stop" : [0, "(O) glitch driver stop register addr"],
-    "trigger_mask" : [0, "(O) trigger data pattern mask"], # MUST SET trigger_exp TOO
-    "trigger_exp" : [0, "(O) trigger expected data pattern"],
-    "trigger_get" : [0, "(O) trigger data pattern register addr"],
-
-    "driver_reconfigure" : [0, "(O) set this to reconfigure the driver pad (D)"],
-    "driver_ode" : [0, "(O) (D) enable open-drain mode"],
-    "driver_dse" : [7, "(O) (D) set drive strength divider"],
-
-    "trigger_reconfigure" : [0, "(O) set this to reconfigure the trigger pad (T)"],
-    "trigger_pke" : [0, "(O) (T) enable pull/keep"],
-    "trigger_pue" : [0, "(O) (T) set pull mode"],
-    "trigger_pus" : [0, "(O) (T) set pull type"],
-    "trigger_hys" : [0, "(O) (T) enable hysteresis"],
-}
-
-uart = serial.Serial(DEFAULT_PORT, baudrate=DEFAULT_BAUD, timeout=1)
-
-def send_rpc_cmd(id, argv):
+def send_rpc_cmd(id, argv, max_wait=MAX_WAIT_RPC):
     data = bytearray()
     for arg in argv:
         data.extend(struct.pack('<I', arg))
@@ -84,41 +125,52 @@ def send_rpc_cmd(id, argv):
     uart.reset_input_buffer()
     uart.write(headr)
     cont = uart.readline()
-    while not RPC_WATERMARK in cont:
+    loopc = 0
+    while (not RPC_WATERMARK in cont) and (max_wait == 0 or loopc < max_wait):
         cont = uart.readline()
+        loopc += 1
+    if not RPC_WATERMARK in cont:
+        print("E: timeout1")
+        return -1
     if cont == RPC_WATERMARK + b'G1\r\n':
         uart.write(data)
         cont = uart.readline()
-        while not RPC_WATERMARK in cont:
+        loopc = 0
+        while (not RPC_WATERMARK in cont) and (max_wait == 0 or loopc < max_wait):
             cont = uart.readline()
+            loopc += 1
+        if not RPC_WATERMARK in cont:
+            print("E: timeout2")
+            return -2
     cont = cont.decode('utf-8').strip("!PC_")
     print(cont)
+    return 0
 
-def glitch_add(argd):
+def glitch_add_dfl(argd, max_wait=MAX_WAIT_RPC):
     #print(argd)
     cmd = "glitch_prep_ll"
     if argd["uart_mode"] == 1:
         cmd = "glitch_prep_uart"
-    flags = argd["queue"] | (argd["no_driver"] << 1) | (argd["no_trigger"] << 2)
+    flags = argd["queue"] | (argd["no_driver"] << CFG_GLITCH_DFL.NODRIVER.value) | (argd["no_trigger"] << CFG_GLITCH_DFL.NOTRIGGER.value)
     argv = [argd["offset"], argd["offset_mult"], argd["width"], flags, argd["trigger"], argd["trigger_state"], argd["driver"]]
     #print(argv)
-    send_rpc_cmd(cmd, argv)
+    return send_rpc_cmd(cmd, argv, max_wait)
 
-def glitch_add_direct(argd):
+def glitch_add_custom(argd, max_wait=MAX_WAIT_RPC):
     #print(argd)
     cmd = "glitch_prep_custom"
     if argd["queue"] == 1:
         cmd = "glitch_prep_custom_chain"
     #TODO: maybe handle it in a nice dictionary/array where idx = bit shift?
-    trigger_ctl = argd["trigger"] | (argd["no_trigger"] << 6) | (argd["uart_mode"] << 8) | (argd["trigger_state"] << 16)
+    trigger_ctl = argd["trigger"] | (argd["no_trigger"] << CFG_XPAD_CTL.IGNORE.value) | (argd["uart_mode"] << CFG_IPAD_CTL.UART_MODE.value) | (argd["trigger_state"] << CFG_IPAD_CTL.TRIG_STATE.value)
     if argd["trigger_reconfigure"] == 1:
-        trigger_ctl = trigger_ctl | (1 << 7) | (argd["trigger_pke"] << 9) | (argd["trigger_pue"] << 10) | (argd["trigger_pus"] << 11) | (argd["trigger_hys"] << 13)
-    driver_ctl = argd["driver"] | (argd["no_driver"] << 6)
+        trigger_ctl = trigger_ctl | (1 << CFG_XPAD_CTL.RECONFIGURE.value) | (argd["trigger_pke"] << CFG_IPAD_CTL.PKE.value) | (argd["trigger_pue"] << CFG_IPAD_CTL.PUE.value) | (argd["trigger_pus"] << CFG_IPAD_CTL.PUS.value) | (argd["trigger_hys"] << CFG_IPAD_CTL.HYS.value)
+    driver_ctl = argd["driver"] | (argd["no_driver"] << CFG_XPAD_CTL.IGNORE.value)
     if argd["driver_reconfigure"] == 1:
-        driver_ctl = driver_ctl | (1 << 7) | (argd["driver_ode"] << 8) | (argd["driver_dse"] << 9)
+        driver_ctl = driver_ctl | (1 << CFG_XPAD_CTL.RECONFIGURE.value) | (argd["driver_ode"] << CFG_OPAD_CTL.ODE) | (argd["driver_dse"] << CFG_OPAD_CTL.DSE)
     argv = [argd["width"], argd["offset"], argd["offset_mult"], trigger_ctl, driver_ctl, argd["clockspeed"], argd["driver_mask"], argd["driver_set_drive"], argd["driver_set_stop"], argd["trigger_mask"], argd["trigger_exp"], argd["trigger_get"]]
     #print(argv)
-    send_rpc_cmd(cmd, argv)
+    return send_rpc_cmd(cmd, argv, max_wait)
 
 # "ui design is my passion" xD
 def helper(focus):
@@ -161,9 +213,9 @@ def handle_cmd(cmd, argv):
                 else:
                     arg_dict[key] = int(val)
             if arg_dict["override"] == 1:
-                return glitch_add_direct(arg_dict)
+                return glitch_add_custom(arg_dict)
             else:
-                return glitch_add(arg_dict)
+                return glitch_add_dfl(arg_dict)
         case "help":
             if len(argv) > 0:
                 return helper(argv[0])
