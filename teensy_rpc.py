@@ -86,6 +86,8 @@ class CFG_GLITCH_DFL(Enum):
 
 RPC_MAGIC = b'@'                        # byte indicating we are talking to teensy
 RPC_WATERMARK = b'!PC_'                 # prefix indicating teensy is replying to us
+RPC_SENDMORE = b'G1\r\n'                # teensy wants more data
+RPC_READYNEXT = b'G0\r\n'               # teensy is ready for the next command
 RPC_COMMANDS = {                        # supported RPC commands & short descriptions
     "ping" : [0x0, "get rpc server firmware build timestamp", ""],
     "read32" : [0x1, "read 32bits from a memory address", "[address]"],
@@ -105,11 +107,20 @@ RPC_COMMANDS = {                        # supported RPC commands & short descrip
     "glitch_prep_none" : [0xf, "prepare a default glitch (no trigger)", "<offset> <offset_mult> <width> <add to chain?> <driver pad>"],
     "custom" : [0x10, "run the custom_main func", "[arg0] [arg1] [arg2] <data>"],
     "uart_init" : [0x11, "init a teensy uartn", "[uartn] [baud] [flags] <wait?>"], #TODO: wrap
-    "pad_configure" : [0x12, "set pad_ctl and mux_ctl for a teensy pad" "[pad] [pad_ctl] [mux_ctl]"], #TODO: wrap
-    "pad_ctrl_logic" : [0x13, "control pad state (logic level mode)", "[func] [pad] <wait?>"], #TODO: wrap
+    "pad_configure" : [0x12, "set pad_ctl and mux_ctl for a teensy pad", "[pad] [pad_ctl] [mux_ctl]"], #TODO: wrap
+    "pad_ctrl_logic" : [0x13, "control pad state (logic level mode)", "[func] [pad] <wait?>"],
     "glitch_set_chain_max" : [0x14, "set glitch varray/chain location and max elements", "<max glitches> <in heap?>"],
     "get_sp" : [0x15, "get the current stack pointer", ""],
     "glitch_arm_loop" : [0x16, "execute the glitch chain in an infinite loop", ""]
+}
+
+LOGIC_COMMANDS = { # cmd : [func, desc, opt_args]
+    "clear" : [0, "set pad low", "None"],
+    "set" : [1, "set pad high", "None"],
+    "toggle" : [2, "toggle pad state", "None"],
+    "mode" : [3, "set pad mode", "[in|out]"],
+    "read" : [4, "read pad state", "None"],
+    "tight" : [5, "use tight-coupled gpio controller for pad", "[0|1]"],
 }
 
 uart = serial.Serial(DEFAULT_PORT, baudrate=DEFAULT_BAUD, timeout=RPC_TIMEOOUT)
@@ -132,7 +143,7 @@ def send_rpc_cmd(id, argv, max_wait=MAX_WAIT_RPC):
     if not RPC_WATERMARK in cont:
         print("E: timeout1")
         return -1
-    if cont == RPC_WATERMARK + b'G1\r\n':
+    if cont == RPC_WATERMARK + RPC_SENDMORE:
         uart.write(data)
         cont = uart.readline()
         loopc = 0
@@ -142,9 +153,19 @@ def send_rpc_cmd(id, argv, max_wait=MAX_WAIT_RPC):
         if not RPC_WATERMARK in cont:
             print("E: timeout2")
             return -2
+    rdy = cont
+    loopc = 0
+    while (not rdy == RPC_WATERMARK + RPC_READYNEXT) and (max_wait == 0 or loopc < max_wait):
+        rdy = uart.readline()
+        loopc += 1
+    if not rdy == RPC_WATERMARK + RPC_READYNEXT:
+        print("W: did not get a rdy reply from teensy, might hang")
     cont = cont.decode('utf-8').strip("!PC_")
-    print(cont)
-    return 0
+    print(cont.strip() + " <done")
+    try:
+        return int(cont[2:], 16)
+    except:
+        return 0xDEFA
 
 def glitch_add_dfl(argd, max_wait=MAX_WAIT_RPC):
     #print(argd)
@@ -183,17 +204,25 @@ def helper(focus):
             print(f"{' ':>24}" + " ! " + " ")
             print(f"{'glitch_add':>24}" + " : " + "wrapper for glitch_prep_* funcs")
             print(f"{'manual':>24}" + " : " + "manual trigger for default glitch_prep_uart")
+            print(f"{'logic':>24}" + " : " + "control pad logic state")
             print(f"{'help <CMD>':>24}" + " : " + "show me or CMD's expected args")
         case "glitch_add":
-            print("\nUsage: " + focus + " param=value par6=val6 par3=val3 ...\n")
+            print("\nUsage: " + focus + " param=value par6=val6 par3=val3 ...")
             print("Descr: " + "prepare a glitch with specified params" + "\n")
             print(f"{'PARAM':>20}" + " : " + f"{'DEFAULT':^7}" + " : " + "DESCRIPTION")
             print(f"{'-----':>20}" + " : " + f"{'-------':^7}" + " : " + "-----------")
             for arg in DEFAULT_ARG_DICT:
                 print(f"{arg:>20}" + " : " + f"{str(DEFAULT_ARG_DICT[arg][0]):^7}" + " : " + DEFAULT_ARG_DICT[arg][1])
+        case "logic":
+            print("\nUsage: " + focus + " [SUBCMD] [ARG] [PAD] <pad2> ...")
+            print("Descr: " + "control pad logic state" + "\n")
+            print(f"{'SUBCMD':>8}" + " : " + f"{'ARG':^8}" + " : " + "DESCRIPTION")
+            print(f"{'------':>8}" + " : " + f"{'---':^8}" + " : " + "-----------")
+            for cmd in LOGIC_COMMANDS:
+                print(f"{cmd:>8}" + " : " + f"{LOGIC_COMMANDS[cmd][2]:^8}" + " : " + LOGIC_COMMANDS[cmd][1])
         case _:
             if focus in RPC_COMMANDS:
-                print("\nUsage: " + focus + " " + RPC_COMMANDS[focus][2] + "\n")
+                print("\nUsage: " + focus + " " + RPC_COMMANDS[focus][2])
                 print("Descr: " + RPC_COMMANDS[focus][1] + "\n")
             else:
                 print("command not found and/or malformed input")
@@ -216,6 +245,22 @@ def handle_cmd(cmd, argv):
                 return glitch_add_custom(arg_dict)
             else:
                 return glitch_add_dfl(arg_dict)
+        case "logic":
+            if not argv[0] in LOGIC_COMMANDS or len(argv) < 2:
+                return helper("logic")
+            op_argv = [LOGIC_COMMANDS[argv[0]][0], 0, 0]
+            if op_argv[0] == 3:
+                op_argv.append(1 if argv[1] == "1" or argv[1].startswith("o") else 0)
+            elif op_argv[0] == 5:
+                op_argv.append(1 if argv[1] == "1" or argv[1].startswith("t") else 0)
+            pads_start = 2 if (op_argv[0] == 3 or op_argv[0] == 5) else 1
+            if len(argv) <= pads_start:
+                return helper("logic")
+            op_ret = 0xFFFFDEFA
+            for pad in argv[pads_start:]:
+                op_argv[1] = int(pad)
+                op_ret = send_rpc_cmd("pad_ctrl_logic", op_argv)
+            return op_ret
         case "help":
             if len(argv) > 0:
                 return helper(argv[0])

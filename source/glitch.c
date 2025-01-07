@@ -76,8 +76,6 @@ int glitch_configure(glitch_config_s* config, bool add_to_chain) {
         teensy_set_pad_ctl(driver_pad, driver_pad_ctl, TEENSY_PAD_MODE_GPIO, true);                                 // pad config
         teensy_pad_logic_ctrl_tightness(driver_pad, true, true);                                                    // change to tight-coupled gpio ctl
         teensy_pad_logic_mode(driver_pad, true, true);                                                              // set as output
-        if (ode_mode)
-            teensy_pad_logic_set(driver_pad, true);                                                                 // set driver to floating
     }
 
     
@@ -114,22 +112,16 @@ int glitch_configure(glitch_config_s* config, bool add_to_chain) {
     
     if (config->overrides.driver.set_to_drive)                                                                      // write a bitfield preset here to open the mosfet gate
         varray->driver_set_reg = config->overrides.driver.set_to_drive;
-    else if (use_driver) {
-        if (ode_mode)
-            varray->driver_set_reg = &(gpio_get_bus_paddr(teensy_get_pad_gpio_bus(driver_pad))->dr_clear);
-        else
-            varray->driver_set_reg = &(gpio_get_bus_paddr(teensy_get_pad_gpio_bus(driver_pad))->dr_set);
-    } else
+    else if (use_driver)
+        varray->driver_set_reg = &(gpio_get_bus_paddr(teensy_get_pad_gpio_bus(driver_pad))->dr_toggle);
+    else
         varray->driver_set_reg = &varray->driver_ports;
 
     if (config->overrides.driver.set_to_stop)                                                                       // write a bitfield preset here to close the mosfet gate
         varray->driver_clr_reg = config->overrides.driver.set_to_stop;
-    else if (use_driver) {
-        if (ode_mode)
-            varray->driver_clr_reg = &(gpio_get_bus_paddr(teensy_get_pad_gpio_bus(driver_pad))->dr_set);
-        else
-            varray->driver_clr_reg = &(gpio_get_bus_paddr(teensy_get_pad_gpio_bus(driver_pad))->dr_clear);
-    } else
+    else if (use_driver)
+        varray->driver_clr_reg = &(gpio_get_bus_paddr(teensy_get_pad_gpio_bus(driver_pad))->dr_toggle);
+    else
         varray->driver_clr_reg = &varray->driver_ports;
 
     if (config->overrides.trigger.mask) {                                                                           // mask and expected masked value from trigger_data_reg

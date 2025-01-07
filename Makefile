@@ -12,13 +12,13 @@ ASFLAGS	=
 
 .PHONY: teensy4 teensy41 all clean
 
+all: output/firmware40.hex output/firmware41.hex
 teensy4: output/firmware40.hex
 teensy41: output/firmware41.hex
-all: output/firmware40.hex output/firmware41.hex
 
 output/firmware40.hex: fw40.hex
-	-rm source/*.o
-	-rm source/*.ao
+	-rm source/*.o source/*.ao
+	-rm output/firmware40.hex output/firmware40.elf
 	-mkdir output
 	mv fw40.elf output/firmware40.elf
 	mv fw40.hex output/firmware40.hex
@@ -36,8 +36,8 @@ fw40.elf: $(OBJS)
 	$(CC) $(ASFLAGS) -c $< -o $@
 
 output/firmware41.hex: fw41.hex output/firmware40.hex
-	-rm source/*.o41
-	-rm source/*.ao41
+	-rm source/*.o41 source/*.ao41
+	-rm output/firmware41.hex output/firmware41.elf
 	-mkdir output
 	mv fw41.elf output/firmware41.elf
 	mv fw41.hex output/firmware41.hex
